@@ -1,32 +1,31 @@
 use std::fs::File;
 use std::io::Read;
 
-
-#[derive(Debug)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 enum TokenType {
     Identifier,
     Reserved,
     Semicolon,
+    Number,
     None
 }
 
 #[derive(Debug)]
-struct Token {
+pub struct Token {
     text: String,
-    line: u64,
-    column: Option<u64>,
+    line: usize,
+    column: usize,
     ttype: TokenType
 }
 
 impl Token {
-    fn new(text: Option<&str>, line: usize, column: Option<u64>) -> Token {
-        let text = String::from(text.unwrap_or(""));
-
-        Token{ text: text, line: line as u64, column: column, ttype: TokenType::None}
-    }
-
-    fn new_on_line(line: usize) -> Token {
-        Token{ text: String::new(), line: line as u64, column: None, ttype: TokenType::None}
+    fn new(text: &str, line: usize, column: usize, ttype: TokenType) -> Token {
+        Token{
+            text: String::from(text),
+            line: line,
+            column: column,
+            ttype: ttype
+        }
     }
 
     fn infer_type(&mut self) {
@@ -36,11 +35,83 @@ impl Token {
             _ => TokenType::Identifier,
         }
     }
+}
 
-    fn is_empty(&self) -> bool {
-        self.text.is_empty()
+
+struct Lexer {
+    index: usize,
+    line: usize,
+    source: String,
+    chars: Vec<char>,
+    len: usize,
+    line_offset: usize,
+}
+
+impl Lexer {
+    fn new(source: String) -> Lexer {
+        let chars = source.chars().collect::<Vec<char>>();
+        let len = chars.len();
+        Lexer {
+            chars: chars,
+            len: len,
+            source: source,
+            line: 1,
+            index: 0,
+            line_offset: 0,
+        }
     }
 }
+
+impl Iterator for Lexer {
+    type Item = Token;
+    fn next(&mut self) -> Option<Token> {
+        let mut c = self.chars[self.index];
+
+        while c.is_whitespace() {
+            self.index += 1;
+            if self.index == self.len {
+                return None
+            }
+
+            if c.escape_default().collect::<String>().as_str() == "\\n" {
+                self.line += 1;
+                self.line_offset = self.index;
+            }
+
+            c = self.chars[self.index];
+        }
+
+        if c.is_alphabetic() {
+            let mut token = Token::new("", self.line, self.index - self.line_offset, TokenType::None);
+            while c.is_alphanumeric() {
+                token.text.push(c);
+                self.index += 1;
+                c = self.chars[self.index];
+            }
+            token.infer_type();
+            return Some(token);
+        }
+
+        if c.is_numeric() {
+            let mut token = Token::new("", self.line, self.index - self.line_offset, TokenType::Number);
+            while c.is_numeric() {
+                token.text.push(c);
+                self.index += 1;
+                c = self.chars[self.index];
+            }
+            return Some(token);
+        }
+
+        if c == ';' {
+            let token = Token::new(";", self.line, self.index - self.line_offset, TokenType::Semicolon);
+            self.index += 1;
+            return Some(token);
+        }
+
+        None
+    }
+}
+
 
 fn main() {
     let mut file = File::open("demo-source.txt").unwrap();
@@ -48,59 +119,8 @@ fn main() {
     file.read_to_string(&mut source).unwrap();
     println!("{}", source);
 
-    //
-    let chars: Vec<char> = source.chars().collect();
-
-    let mut token_vec: Vec<Token> = vec![];
-    let mut token: Token;
-    // TODO:
-    // Attempt to produce an iterator that yields tokens
-    // return source.lines().enumerate().map(|line, line_str| {
-    //   token = ...
-    //   return line_str.char_indices().map(|column, c| {
-    //     stuff...
-    //     return token ?
-    //   })
-    // })
-    for (line, line_string) in source.lines().enumerate() {
-        token = Token::new(None, line+1, None);
-
-        println!("{}, {}", line, line_string);
-        for (column, c) in line_string.char_indices() {
-            if token.column.is_none() {
-                token.column = Some(column as u64);
-            }
-
-            if c.is_whitespace() {
-                if !token.is_empty() {
-                    token.infer_type();
-                    token_vec.push(token);
-                    token = Token::new_on_line(line+1);
-                } else {
-                    continue;
-                }
-            } else if c == ';' {
-                token.infer_type();
-                token_vec.push(token);
-
-                token = Token::new(Some(";"), line+1, Some(column as u64));
-                token.infer_type();
-                token_vec.push(token);
-
-                token = Token::new_on_line(line+1);
-            } else {
-                token.text.push(c);
-            }
-        }
-        if !token.is_empty(){
-            token.infer_type();
-            token_vec.push(token)
-        }
-    }
-
-    for t in token_vec {
-        println!("{:?}", t);
+    let lexer = Lexer::new(source);
+    for t in lexer {
+        println!("{:?}", t)
     }
 }
-
-
