@@ -49,7 +49,9 @@ struct Lexer {
 
 impl Lexer {
     fn new(source: String) -> Lexer {
-        let chars = source.chars().collect::<Vec<char>>();
+        let mut chars = source.chars().collect::<Vec<char>>();
+        // Assure that the end of a file is a line feed
+        chars.push('\n');
         let len = chars.len();
         Lexer {
             chars: chars,
@@ -62,6 +64,7 @@ impl Lexer {
     }
 }
 
+
 impl Iterator for Lexer {
     type Item = Token;
     fn next(&mut self) -> Option<Token> {
@@ -69,11 +72,12 @@ impl Iterator for Lexer {
 
         while c.is_whitespace() {
             self.index += 1;
+
             if self.index == self.len {
                 return None
             }
 
-            if c.escape_default().collect::<String>().as_str() == "\\n" {
+            if c == '\n' {
                 self.line += 1;
                 self.line_offset = self.index;
             }
