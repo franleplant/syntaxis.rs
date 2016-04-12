@@ -81,7 +81,6 @@ pub struct M {
 //- AFND-lambda ?
 impl M {
     pub fn new(k: StateSet, alphabet: BTreeSet<char>, q0: State, f: StateSet, delta: Delta) -> M {
-        //TODO: every alphabet has lambda implicit so always allow lambda
         //TODO: if delta has lambda transitions then dont allow to check string!
 
         // Check that q0 belongs to K
