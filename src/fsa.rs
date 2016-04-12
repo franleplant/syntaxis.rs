@@ -1,15 +1,16 @@
-use std::collections::HashSet;
+use std::collections::{BTreeSet};
 use std::result;
 
 
 pub type State = String;
-pub type Delta = HashSet<((State, char), State)>;
+pub type StateSet = BTreeSet<State>;
+pub type Delta = BTreeSet<((State, char), State)>;
 pub type Result = result::Result<(), ()>;
 
 macro_rules! stateset {
     ( $( $x:expr ),* ) => {
         {
-            let mut temp_set = HashSet::new();
+            let mut temp_set: BTreeSet<String> = BTreeSet::new();
             $(
                 temp_set.insert($x.to_string());
             )*
@@ -21,7 +22,7 @@ macro_rules! stateset {
 macro_rules! alphabet {
     ( $( $c:expr ),* ) => {
         {
-            let mut alphabet_set = HashSet::new();
+            let mut alphabet_set: BTreeSet<char> = BTreeSet::new();
             $(
                 alphabet_set.insert($c);
             )*
@@ -33,7 +34,7 @@ macro_rules! alphabet {
 macro_rules! delta {
     ( $( (($s:expr, $c:expr), $ns:expr) ),* ) => {
         {
-            let mut temp_delta: HashSet<((String, char), String)> = HashSet::new();
+            let mut temp_delta: BTreeSet<((String, char), String)> = BTreeSet::new();
             $(
                 temp_delta.insert( (($s.to_string(), $c), $ns.to_string()) );
             )*
@@ -42,12 +43,14 @@ macro_rules! delta {
     };
 }
 
+
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct M {
-    pub k: HashSet<State>,
-    pub alphabet: HashSet<char>,
+    pub k: StateSet,
+    pub alphabet: BTreeSet<char>,
     pub q0: State,
-    pub f: HashSet<State>,
+    pub f: StateSet,
     pub delta: Delta,
 
     state: State,
@@ -59,7 +62,7 @@ pub struct M {
 //- AFND ?
 //- AFND-lambda ?
 impl M {
-    pub fn new(k: HashSet<State>, alphabet: HashSet<char>, q0: State, f: HashSet<State>, delta: Delta) -> M {
+    pub fn new(k: StateSet, alphabet: BTreeSet<char>, q0: State, f: StateSet, delta: Delta) -> M {
         //TODO: every alphabet has lambda implicit so always allow lambda
         //TODO: if delta has lambda transitions then dont allow to check string!
 
@@ -147,7 +150,7 @@ impl M {
 #[cfg(test)]
 mod tests_fsa {
     use super::M;
-    use std::collections::HashSet;
+    use std::collections::BTreeSet;
 
     #[test]
     fn basic_functionality() {
