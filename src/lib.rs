@@ -50,7 +50,7 @@ pub fn mover(q: &StateSet, a: char, m: &M) -> StateSet {
 
 
 fn stateset_name(states: &StateSet) -> String {
-    let mut states_vec: Vec<State> = states.iter().cloned().collect();
+    let states_vec: Vec<State> = states.iter().cloned().collect();
     states_vec.join("")
 }
 

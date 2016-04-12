@@ -8,7 +8,13 @@ pub type Delta = BTreeSet<((State, char), State)>;
 pub type Result = result::Result<(), ()>;
 
 macro_rules! stateset {
-    ( $( $x:expr ),* ) => {
+    () => {
+        {
+            let temp_set: BTreeSet<String> = BTreeSet::new();
+            temp_set
+        }
+    };
+    ( $( $x:expr ),+ ) => {
         {
             let mut temp_set: BTreeSet<String> = BTreeSet::new();
             $(
@@ -20,6 +26,12 @@ macro_rules! stateset {
 }
 
 macro_rules! alphabet {
+    () => {
+        {
+            let alphabet_set: BTreeSet<char> = BTreeSet::new();
+            alphabet_set
+        }
+    };
     ( $( $c:expr ),* ) => {
         {
             let mut alphabet_set: BTreeSet<char> = BTreeSet::new();
@@ -32,6 +44,12 @@ macro_rules! alphabet {
 }
 
 macro_rules! delta {
+    () => {
+        {
+            let temp_delta: BTreeSet<((String, char), String)> = BTreeSet::new();
+            temp_delta
+        }
+    };
     ( $( (($s:expr, $c:expr), $ns:expr) ),* ) => {
         {
             let mut temp_delta: BTreeSet<((String, char), String)> = BTreeSet::new();
@@ -185,7 +203,7 @@ mod tests_fsa {
             (("q0", 'a'), "q0")
         );
 
-        let fsa = M::new(k, alphabet, q0, f, delta);
+        M::new(k, alphabet, q0, f, delta);
 
         assert!(true);
     }
@@ -201,7 +219,7 @@ mod tests_fsa {
             (("q0", 'a'), "q0")
         );
 
-        let fsa = M::new(k, alphabet, q0, f, delta);
+        M::new(k, alphabet, q0, f, delta);
 
         assert!(true);
     }
@@ -218,7 +236,7 @@ mod tests_fsa {
             (("q1", 'a'), "q0")
         );
 
-        let fsa = M::new(k, alphabet, q0, f, delta);
+        M::new(k, alphabet, q0, f, delta);
 
         assert!(true);
     }
@@ -236,7 +254,7 @@ mod tests_fsa {
         );
 
 
-        let fsa = M::new(k, alphabet, q0, f, delta);
+        M::new(k, alphabet, q0, f, delta);
 
         assert!(true);
     }
@@ -253,7 +271,7 @@ mod tests_fsa {
         );
 
 
-        let fsa = M::new(k, alphabet, q0, f, delta);
+        M::new(k, alphabet, q0, f, delta);
 
         assert!(true);
     }
