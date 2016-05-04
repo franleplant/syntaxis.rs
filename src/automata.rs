@@ -165,7 +165,7 @@ impl M {
 }
 
 #[cfg(test)]
-mod tests_fsa {
+mod tests_automata {
     use super::M;
     use std::collections::BTreeSet;
 
@@ -184,11 +184,11 @@ mod tests_fsa {
         );
 
 
-        let mut fsa = M::new(k, alphabet, q0, f, delta);
+        let mut automata = M::new(k, alphabet, q0, f, delta);
 
-        assert!(fsa.check_string("ab").is_ok());
-        assert!(fsa.check_string("abc").is_err());
-        assert!(fsa.check_string("aaabbbabababa").is_ok());
+        assert!(automata.check_string("ab").is_ok());
+        assert!(automata.check_string("abc").is_err());
+        assert!(automata.check_string("aaabbbabababa").is_ok());
     }
 
     #[test]

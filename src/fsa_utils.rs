@@ -1,4 +1,4 @@
-use fsa::{M, State, StateSet};
+use automata::{M, State, StateSet};
 use std::collections::{BTreeSet};
 use std::cmp::Ord;
 
@@ -91,7 +91,7 @@ pub fn afndl_to_afd(m: &M) -> M {
 //TODO: add more tests
 #[cfg(test)]
 mod tests {
-    use fsa::M;
+    use automata::M;
     use super::{btreeset_eq, lambda_closure, mover, afndl_to_afd};
     use std::collections::{BTreeSet};
 
@@ -106,11 +106,11 @@ mod tests {
             (("q0", 'b'), "q1")
         );
 
-        let fsa = M::new(k, alphabet, q0, f, delta);
+        let automata = M::new(k, alphabet, q0, f, delta);
 
         let q = stateset!("q0");
         let expected = stateset!("q0", "q2");
-        let actual = lambda_closure(&q, &fsa);
+        let actual = lambda_closure(&q, &automata);
         assert!(actual.is_subset(&expected) && expected.is_subset(&actual));
     }
 
@@ -127,12 +127,12 @@ mod tests {
             (("q1", 'b'), "q1")
         );
 
-        let fsa = M::new(k, alphabet, q0, f, delta);
+        let automata = M::new(k, alphabet, q0, f, delta);
 
 
         let q = stateset!("q0");
         let expected = stateset!("q1", "q2");
-        let actual = mover(&q, 'a', &fsa);
+        let actual = mover(&q, 'a', &automata);
         assert!(actual.is_subset(&expected) && expected.is_subset(&actual));
     }
 

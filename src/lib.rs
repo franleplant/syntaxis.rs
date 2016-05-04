@@ -1,3 +1,3 @@
-#[macro_use] pub mod fsa;
+#[macro_use] pub mod automata;
 pub mod fsa_utils;
 
