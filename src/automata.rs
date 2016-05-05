@@ -9,63 +9,8 @@ pub type DeltaValue = BTreeMap<char, StateSet>;
 pub type DeltaInner = BTreeMap<State, DeltaValue>;
 pub type Result = result::Result<(), ()>;
 
-macro_rules! stateset {
-    () => {
-        {
-            let temp_set: BTreeSet<String> = BTreeSet::new();
-            temp_set
-        }
-    };
-    ( $( $x:expr ),+ ) => {
-        {
-            let mut temp_set: BTreeSet<String> = BTreeSet::new();
-            $(
-                temp_set.insert($x.to_string());
-            )*
-            temp_set
-        }
-    };
-}
 
-macro_rules! alphabet {
-    () => {
-        {
-            let alphabet_set: BTreeSet<char> = BTreeSet::new();
-            alphabet_set
-        }
-    };
-    ( $( $c:expr ),* ) => {
-        {
-            let mut alphabet_set: BTreeSet<char> = BTreeSet::new();
-            $(
-                alphabet_set.insert($c);
-            )*
-            alphabet_set
-        }
-    };
-}
-
-macro_rules! delta {
-    () => {
-        {
-            let temp_delta: BTreeSet<((String, char), String)> = BTreeSet::new();
-            temp_delta
-        }
-    };
-    ( $( (($s:expr, $c:expr), $ns:expr) ),* ) => {
-        {
-            let mut temp_delta: BTreeSet<((String, char), String)> = BTreeSet::new();
-            $(
-                temp_delta.insert( (($s.to_string(), $c), $ns.to_string()) );
-            )*
-            temp_delta
-        }
-    };
-}
-
-
-
-fn normalize_delta_input(delta_input: Delta) -> DeltaInner {
+fn to_delta_inner(delta_input: Delta) -> DeltaInner {
     let mut delta: DeltaInner = BTreeMap::new();
 
     for &((ref s, a), ref ns) in delta_input.iter() {
@@ -137,7 +82,7 @@ impl M {
             alphabet: alphabet,
             q0: q0.clone(),
             f: f,
-            delta: normalize_delta_input(delta),
+            delta: to_delta_inner(delta),
             state: q0,
         }
     }
@@ -147,27 +92,8 @@ impl M {
             return Err(())
         }
 
-        //match self.delta.get(&self.state) {
-            //None => return Err(()),
-            //Some(delta_value) => {
-                //match delta_value.get(&c) {
-                    //None => return Err(()),
-                    //Some(next_states) => {
-                        //if next_states.len() > 1 {
-                            //println!("None determinist automata: found more than one next state for a given state and char");
-                        //}
+        let next_states = try!(self.get_next_states(&self.state, &c).ok_or( () ));
 
-                        //for next_state in next_states.iter().take(1) {
-                            //self.state = next_state.clone();
-                        //}
-                        //Ok(())
-                    //}
-                //}
-            //}
-        //}
-        //
-        let delta_value = try!(self.delta.get(&self.state).ok_or(()));
-        let next_states = try!(delta_value.get(&c).ok_or(()));
         if next_states.len() > 1 {
             println!("None determinist automata: found more than one next state for a given state and char");
         }
@@ -175,6 +101,7 @@ impl M {
         for next_state in next_states.iter().take(1) {
             self.state = next_state.clone();
         }
+
         Ok(())
     }
 
@@ -350,9 +277,9 @@ mod tests_automata {
     }
 
     #[test]
-    fn test_normalize_delta_input() {
+    fn test_to_delta_inner() {
 
-        use super::{DeltaValue, normalize_delta_input};
+        use super::{DeltaValue, to_delta_inner};
 
         let delta = delta!(
             (("q0", 'a'), "q1"),
@@ -361,7 +288,7 @@ mod tests_automata {
             (("q1", 'a'), "q2")
         );
 
-        let delta_inner = normalize_delta_input(delta);
+        let delta_inner = to_delta_inner(delta);
 
         assert!(delta_inner.contains_key(&"q0".to_string()));
         assert!(delta_inner.contains_key(&"q1".to_string()));
