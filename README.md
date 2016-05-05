@@ -8,8 +8,6 @@ Install Rust and Cargo and clone this repo, then just `cargo test`
 
 ## TODO
 
-- Change Fsa to Automata
-- Improve the internal representation of delta: `BTreeMap<State, BTreeMap<char, BTreeSet<State>>>` that will make delta faster to use
 - Read/write automatas to/from file
 - automata -> Min automata
 - Define a proper data structure for grammars

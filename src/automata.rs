@@ -1,10 +1,12 @@
-use std::collections::{BTreeSet};
+use std::collections::{BTreeSet, BTreeMap};
 use std::result;
 
 
 pub type State = String;
 pub type StateSet = BTreeSet<State>;
 pub type Delta = BTreeSet<((State, char), State)>;
+pub type DeltaValue = BTreeMap<char, StateSet>;
+pub type DeltaInner = BTreeMap<State, DeltaValue>;
 pub type Result = result::Result<(), ()>;
 
 macro_rules! stateset {
@@ -62,6 +64,32 @@ macro_rules! delta {
 }
 
 
+
+fn normalize_delta_input(delta_input: Delta) -> DeltaInner {
+    let mut delta: DeltaInner = BTreeMap::new();
+
+    for &((ref s, a), ref ns) in delta_input.iter() {
+
+        let mut delta_value = match delta.get(s) {
+            Some(value) => value.clone(),
+            None => BTreeMap::new()
+        };
+
+        let mut next_states = match delta_value.get(&a) {
+            Some(states) => states.clone(),
+            None => BTreeSet::new()
+        };
+
+        next_states.insert(ns.clone());
+        delta_value.insert(a, next_states);
+        delta.insert(s.clone(), delta_value);
+    }
+    println!("{:?}", delta);
+
+    delta
+}
+
+
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct M {
@@ -69,16 +97,11 @@ pub struct M {
     pub alphabet: BTreeSet<char>,
     pub q0: State,
     pub f: StateSet,
-    pub delta: Delta,
+    pub delta: DeltaInner,
 
     state: State,
 }
 
-//TODO: separate this functions in different traits
-//- M it only provides the constructor and some other potential utilities
-//- AFD
-//- AFND ?
-//- AFND-lambda ?
 impl M {
     pub fn new(k: StateSet, alphabet: BTreeSet<char>, q0: State, f: StateSet, delta: Delta) -> M {
         //TODO: if delta has lambda transitions then dont allow to check string!
@@ -108,30 +131,51 @@ impl M {
             }
         }
 
+
         M {
             k: k,
             alphabet: alphabet,
             q0: q0.clone(),
             f: f,
-            delta: delta,
+            delta: normalize_delta_input(delta),
             state: q0,
         }
     }
 
-    //TODO: from down here it should part of the AFD trait
     pub fn next(&mut self, c: char) -> Result {
         if !self.alphabet.contains(&c) {
             return Err(())
         }
 
-        for &(ref rule, ref next_state) in &self.delta {
-            if (&self.state, c) == (&rule.0, rule.1) {
-                self.state = next_state.clone();
-                return Ok(())
-            }
+        //match self.delta.get(&self.state) {
+            //None => return Err(()),
+            //Some(delta_value) => {
+                //match delta_value.get(&c) {
+                    //None => return Err(()),
+                    //Some(next_states) => {
+                        //if next_states.len() > 1 {
+                            //println!("None determinist automata: found more than one next state for a given state and char");
+                        //}
+
+                        //for next_state in next_states.iter().take(1) {
+                            //self.state = next_state.clone();
+                        //}
+                        //Ok(())
+                    //}
+                //}
+            //}
+        //}
+        //
+        let delta_value = try!(self.delta.get(&self.state).ok_or(()));
+        let next_states = try!(delta_value.get(&c).ok_or(()));
+        if next_states.len() > 1 {
+            println!("None determinist automata: found more than one next state for a given state and char");
         }
 
-        Err(())
+        for next_state in next_states.iter().take(1) {
+            self.state = next_state.clone();
+        }
+        Ok(())
     }
 
     pub fn end(&mut self) -> Result {
@@ -162,6 +206,16 @@ impl M {
 
         self.end()
     }
+
+    pub fn get_next_states(&self, state: &State, a: &char) -> Option<StateSet> {
+        if let Some(delta_value) = self.delta.get(state) {
+            if let Some(next_states) = delta_value.get(a) {
+                return Some(next_states.clone())
+            }
+        }
+
+        None
+    }
 }
 
 #[cfg(test)]
@@ -189,6 +243,26 @@ mod tests_automata {
         assert!(automata.check_string("ab").is_ok());
         assert!(automata.check_string("abc").is_err());
         assert!(automata.check_string("aaabbbabababa").is_ok());
+    }
+
+    #[test]
+    fn basic_get_next_states() {
+        let k = stateset!("q0", "q1");
+        let alphabet = alphabet!('a', 'b');
+        let q0 = "q0".to_string();
+        let f = stateset!("q1");
+        let delta = delta!(
+            (("q0", 'a'), "q1"),
+            (("q0", 'b'), "q0"),
+            (("q1", 'a'), "q0"),
+            (("q1", 'b'), "q1")
+        );
+
+
+        let automata = M::new(k, alphabet, q0, f, delta);
+
+        let ns = automata.get_next_states(&"q0".to_string(), &'a').unwrap();
+        assert!(ns.contains(&"q1".to_string()));
     }
 
     #[test]
@@ -273,5 +347,40 @@ mod tests_automata {
         M::new(k, alphabet, q0, f, delta);
 
         assert!(true);
+    }
+
+    #[test]
+    fn test_normalize_delta_input() {
+
+        use super::{DeltaValue, normalize_delta_input};
+
+        let delta = delta!(
+            (("q0", 'a'), "q1"),
+            (("q0", 'a'), "q2"),
+            (("q0", 'b'), "q1"),
+            (("q1", 'a'), "q2")
+        );
+
+        let delta_inner = normalize_delta_input(delta);
+
+        assert!(delta_inner.contains_key(&"q0".to_string()));
+        assert!(delta_inner.contains_key(&"q1".to_string()));
+
+        let q0_value: &DeltaValue = delta_inner.get(&"q0".to_string()).unwrap();
+        let q1_value: &DeltaValue = delta_inner.get(&"q1".to_string()).unwrap();
+
+        assert!(q0_value.contains_key(&'a'));
+        assert!(q0_value.contains_key(&'b'));
+        assert!(q1_value.contains_key(&'a'));
+
+        let q0_a_value = q0_value.get(&'a').unwrap();
+        assert!(q0_a_value.contains(&"q1".to_string()));
+        assert!(q0_a_value.contains(&"q2".to_string()));
+
+        let q0_b_value = q0_value.get(&'b').unwrap();
+        assert!(q0_b_value.contains(&"q1".to_string()));
+
+        let q1_a_value = q1_value.get(&'a').unwrap();
+        assert!(q1_a_value.contains(&"q2".to_string()));
     }
 }
