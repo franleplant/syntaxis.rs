@@ -91,6 +91,7 @@ impl M {
         }
 
         // Check that each element of delta belongs to either K or Alphabet
+        // TODO: use the faster DeltaMap structure to run this runtime check
         for &((ref current_state, c), ref next_state) in &delta {
             if !k.contains(current_state) {
                 panic!("Delta is incorrect. In {:?} rule, \"{}\" does not belong to K", ((current_state, c), next_state), current_state)

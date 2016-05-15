@@ -2,6 +2,7 @@ use automata::{M, State, StateSet};
 use std::collections::{BTreeSet};
 use std::cmp::Ord;
 
+//TODO: M -> better state names M
 
 pub fn btreeset_eq<T: Ord>(a: &BTreeSet<T>, b: &BTreeSet<T>) -> bool {
     a.is_subset(&b) && b.is_subset(&a)
