@@ -1,37 +1,66 @@
 use std::collections::{BTreeSet, BTreeMap};
 use std::result;
 
+//TODO: change the type of Delta to simpler (s,a,ns)
 
 pub type State = String;
 pub type StateSet = BTreeSet<State>;
 pub type Delta = BTreeSet<((State, char), State)>;
 pub type DeltaValue = BTreeMap<char, StateSet>;
-pub type DeltaInner = BTreeMap<State, DeltaValue>;
+pub type DeltaMap = BTreeMap<State, DeltaValue>;
+pub type Alphabet = BTreeSet<char>;
 pub type Result = result::Result<(), ()>;
 
 
-fn to_delta_inner(delta_input: Delta) -> DeltaInner {
-    let mut delta: DeltaInner = BTreeMap::new();
+pub static TRAP_STATE: &'static str = "trap_state";
+
+fn to_delta_inner(delta_input: Delta, k: &StateSet, alphabet: &Alphabet) -> DeltaMap {
+
+    let mut next_states = BTreeSet::new();
+    next_states.insert(TRAP_STATE.to_string());
+
+    let mut alphabet_map: DeltaValue = BTreeMap::new();
+    for a in alphabet.iter() {
+        alphabet_map.insert(a.clone(), next_states.clone());
+    }
+
+    let mut delta: DeltaMap = BTreeMap::new();
+    for s in k.iter() {
+        delta.insert(s.clone(), alphabet_map.clone());
+    }
+
 
     for &((ref s, a), ref ns) in delta_input.iter() {
+        //This never fails
+        let mut delta_value: &mut DeltaValue = delta.get_mut(s).unwrap();
 
-        let mut delta_value = match delta.get(s) {
-            Some(value) => value.clone(),
-            None => BTreeMap::new()
-        };
+        //Special case for lambda since we dont want deterministic
+        //automatas to have dummy lambda transitions.
+        //Only add them when necessary
+        if a == 'λ' && !delta_value.contains_key(&a) {
+            let next_states = BTreeSet::new();
+            delta_value.insert(a, next_states);
+        }
 
-        let mut next_states = match delta_value.get(&a) {
-            Some(states) => states.clone(),
-            None => BTreeSet::new()
-        };
+        let mut next_states: &mut StateSet = delta_value.get_mut(&a).unwrap();
 
+        next_states.remove(&TRAP_STATE.to_string());
         next_states.insert(ns.clone());
-        delta_value.insert(a, next_states);
-        delta.insert(s.clone(), delta_value);
     }
-    println!("{:?}", delta);
+
+
+    delta.insert(TRAP_STATE.to_string().clone(), alphabet_map.clone());
 
     delta
+}
+
+
+pub fn print_delta(delta: &DeltaMap) {
+    println!("");
+    for (key, value) in delta.iter() {
+        println!("{:<20}    {:?}", key, value)
+    }
+    println!("");
 }
 
 
@@ -42,7 +71,7 @@ pub struct M {
     pub alphabet: BTreeSet<char>,
     pub q0: State,
     pub f: StateSet,
-    pub delta: DeltaInner,
+    pub delta: DeltaMap,
 
     state: State,
 }
@@ -76,13 +105,15 @@ impl M {
             }
         }
 
+        let delta = to_delta_inner(delta, &k, &alphabet);
+
 
         M {
             k: k,
             alphabet: alphabet,
             q0: q0.clone(),
             f: f,
-            delta: to_delta_inner(delta),
+            delta: delta,
             state: q0,
         }
     }
@@ -278,8 +309,12 @@ mod tests_automata {
 
     #[test]
     fn test_to_delta_inner() {
+        //TODO: improve tests
 
         use super::{DeltaValue, to_delta_inner};
+
+        let states = stateset!("q0", "q1", "q2");
+        let alphabet = alphabet!('a', 'b');
 
         let delta = delta!(
             (("q0", 'a'), "q1"),
@@ -288,7 +323,8 @@ mod tests_automata {
             (("q1", 'a'), "q2")
         );
 
-        let delta_inner = to_delta_inner(delta);
+        let delta_inner = to_delta_inner(delta, &states, &alphabet);
+        println!("asdasdasd {:?}", delta_inner);
 
         assert!(delta_inner.contains_key(&"q0".to_string()));
         assert!(delta_inner.contains_key(&"q1".to_string()));

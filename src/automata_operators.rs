@@ -57,9 +57,11 @@ pub fn mover(q: &StateSet, a: char, m: &M) -> StateSet {
 
 pub fn afndl_to_afd(m: &M) -> M {
     let q0: StateSet = lambda_closure(&stateset!(m.q0), &m);
-    let mut k: BTreeSet<StateSet> = BTreeSet::new();
     let q0_str = stateset_name(&q0);
+
+    let mut k: BTreeSet<StateSet> = BTreeSet::new();
     k.insert(q0);
+
     let mut f = stateset!();
     let mut delta = delta!();
     let mut marked = BTreeSet::new();
@@ -72,7 +74,7 @@ pub fn afndl_to_afd(m: &M) -> M {
             for a in m.alphabet.iter() {
                 let u = mover(&t, *a, &m);
                 if u.is_empty() { continue; }
-                println!("u {:?}", u);
+                //println!("u {:?}", u);
 
                 let intersection: StateSet = u.intersection(&m.f).cloned().collect();
                 if !intersection.is_empty() {
@@ -94,7 +96,7 @@ pub fn afndl_to_afd(m: &M) -> M {
 //TODO: add more tests
 #[cfg(test)]
 mod tests {
-    use automata::M;
+    use automata::{M};
     use super::{btreeset_eq, lambda_closure, mover, afndl_to_afd};
     use std::collections::{BTreeSet};
 
@@ -159,29 +161,75 @@ mod tests {
         let afndl = M::new(k, alphabet, q0, f, delta);
 
         let afd: M = afndl_to_afd(&afndl);
-        println!("{:?}", afd);
 
-        let k_expected = stateset!("q0", "q1q2", "q2q3q4", "q2q3", "q5");
+        let k_expected = stateset!("q0", "q1q2", "q2q3q4trap_state", "q2q3trap_state", "q5trap_state", "trap_state");
+        //print_delta(&afd.delta);
+
         assert!( btreeset_eq(&afd.k, &k_expected) );
 
         assert!( btreeset_eq(&afd.alphabet, &afndl.alphabet) );
 
-        let f_expected = stateset!("q5");
+        let f_expected = stateset!("q5trap_state");
         assert!( btreeset_eq(&afd.f, &f_expected) );
 
         assert!(afd.q0 == "q0");
 
-        //TODO: make this testing easier
-        //let delta_expected = delta!(
-            //(("q0", 'a'), "q1q2"),
-            //(("q1q2", 'a'), "q2q3q4"),
-            //(("q1q2", 'b'), "q2q3"),
-            //(("q2q3", 'a'), "q2q3q4"),
-            //(("q2q3q4", 'a'), "q2q3q4"),
-            //(("q2q3q4", 'b'), "q5")
-        //);
 
-        //assert!( btreeset_eq(&afd.delta, &delta_expected) );
+        //TODO: might be good to create a new delta, run to_delta_inner
+        //and compare the two BTreeMaps directly
+        assert!(
+            afd.get_next_states(&"q0".to_string(), &'a').unwrap()
+                .contains(&"q1q2".to_string())
+        );
+        assert!(
+            afd.get_next_states(&"q0".to_string(), &'b').unwrap()
+                .contains(&"trap_state".to_string())
+        );
+
+        assert!(
+            afd.get_next_states(&"q1q2".to_string(), &'a').unwrap()
+                .contains(&"q2q3q4trap_state".to_string())
+        );
+        assert!(
+            afd.get_next_states(&"q1q2".to_string(), &'b').unwrap()
+                .contains(&"q2q3trap_state".to_string())
+        );
+
+        assert!(
+            afd.get_next_states(&"q2q3q4trap_state".to_string(), &'a').unwrap()
+                .contains(&"q2q3q4trap_state".to_string())
+        );
+        assert!(
+            afd.get_next_states(&"q2q3q4trap_state".to_string(), &'b').unwrap()
+                .contains(&"q5trap_state".to_string())
+        );
+
+        assert!(
+            afd.get_next_states(&"q2q3trap_state".to_string(), &'a').unwrap()
+                .contains(&"q2q3q4trap_state".to_string())
+        );
+        assert!(
+            afd.get_next_states(&"q2q3trap_state".to_string(), &'b').unwrap()
+                .contains(&"trap_state".to_string())
+        );
+
+        assert!(
+            afd.get_next_states(&"q5trap_state".to_string(), &'a').unwrap()
+                .contains(&"trap_state".to_string())
+        );
+        assert!(
+            afd.get_next_states(&"q5trap_state".to_string(), &'b').unwrap()
+                .contains(&"trap_state".to_string())
+        );
+
+        assert!(
+            afd.get_next_states(&"trap_state".to_string(), &'a').unwrap()
+                .contains(&"trap_state".to_string())
+        );
+        assert!(
+            afd.get_next_states(&"trap_state".to_string(), &'b').unwrap()
+                .contains(&"trap_state".to_string())
+        );
     }
 }
 
