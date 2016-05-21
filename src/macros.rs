@@ -39,15 +39,15 @@ macro_rules! alphabet {
 macro_rules! delta {
     () => {
         {
-            let temp_delta: BTreeSet<((String, char), String)> = BTreeSet::new();
+            let temp_delta: BTreeSet<(String, char, String)> = BTreeSet::new();
             temp_delta
         }
     };
-    ( $( (($s:expr, $c:expr), $ns:expr) ),* ) => {
+    ( $( ($s:expr, $c:expr, $ns:expr) ),* ) => {
         {
-            let mut temp_delta: BTreeSet<((String, char), String)> = BTreeSet::new();
+            let mut temp_delta: BTreeSet<(String, char, String)> = BTreeSet::new();
             $(
-                temp_delta.insert( (($s.to_string(), $c), $ns.to_string()) );
+                temp_delta.insert( ($s.to_string(), $c, $ns.to_string()) );
             )*
             temp_delta
         }

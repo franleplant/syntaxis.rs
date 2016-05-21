@@ -5,7 +5,7 @@ use std::result;
 
 pub type State = String;
 pub type StateSet = BTreeSet<State>;
-pub type Delta = BTreeSet<((State, char), State)>;
+pub type Delta = BTreeSet<(State, char, State)>;
 pub type DeltaValue = BTreeMap<char, StateSet>;
 pub type DeltaMap = BTreeMap<State, DeltaValue>;
 pub type Alphabet = BTreeSet<char>;
@@ -30,7 +30,7 @@ fn to_delta_inner(delta_input: Delta, k: &StateSet, alphabet: &Alphabet) -> Delt
     }
 
 
-    for &((ref s, a), ref ns) in delta_input.iter() {
+    for &(ref s, a, ref ns) in delta_input.iter() {
         //This never fails
         let mut delta_value: &mut DeltaValue = delta.get_mut(s).unwrap();
 
@@ -92,17 +92,17 @@ impl M {
 
         // Check that each element of delta belongs to either K or Alphabet
         // TODO: use the faster DeltaMap structure to run this runtime check
-        for &((ref current_state, c), ref next_state) in &delta {
+        for &(ref current_state, c, ref next_state) in &delta {
             if !k.contains(current_state) {
-                panic!("Delta is incorrect. In {:?} rule, \"{}\" does not belong to K", ((current_state, c), next_state), current_state)
+                panic!("Delta is incorrect. In {:?} rule, \"{}\" does not belong to K", (current_state, c, next_state), current_state)
             }
 
             if !k.contains(next_state) {
-                panic!("Delta is incorrect. In {:?} rule, \"{}\" does not belong to K", ((current_state, c), next_state), next_state)
+                panic!("Delta is incorrect. In {:?} rule, \"{}\" does not belong to K", (current_state, c, next_state), next_state)
             }
 
             if c != 'λ' && !alphabet.contains(&c) {
-                panic!("Delta is incorrect. In {:?} rule, '{}' does not belong to Alphabet", ((current_state, c), next_state), c)
+                panic!("Delta is incorrect. In {:?} rule, '{}' does not belong to Alphabet", (current_state, c, next_state), c)
             }
         }
 
@@ -190,10 +190,10 @@ mod tests_automata {
         let q0 = "q0".to_string();
         let f = stateset!("q1");
         let delta = delta!(
-            (("q0", 'a'), "q1"),
-            (("q0", 'b'), "q0"),
-            (("q1", 'a'), "q0"),
-            (("q1", 'b'), "q1")
+            ("q0", 'a', "q1"),
+            ("q0", 'b', "q0"),
+            ("q1", 'a', "q0"),
+            ("q1", 'b', "q1")
         );
 
 
@@ -211,10 +211,10 @@ mod tests_automata {
         let q0 = "q0".to_string();
         let f = stateset!("q1");
         let delta = delta!(
-            (("q0", 'a'), "q1"),
-            (("q0", 'b'), "q0"),
-            (("q1", 'a'), "q0"),
-            (("q1", 'b'), "q1")
+            ("q0", 'a', "q1"),
+            ("q0", 'b', "q0"),
+            ("q1", 'a', "q0"),
+            ("q1", 'b', "q1")
         );
 
 
@@ -232,7 +232,7 @@ mod tests_automata {
         let q0 = "not_valid".to_string();
         let f = stateset!();
         let delta = delta!(
-            (("q0", 'a'), "q0")
+            ("q0", 'a', "q0")
         );
 
         M::new(k, alphabet, q0, f, delta);
@@ -248,7 +248,7 @@ mod tests_automata {
         let q0 = "q0".to_string();
         let f = stateset!("not_valid");
         let delta = delta!(
-            (("q0", 'a'), "q0")
+            ("q0", 'a', "q0")
         );
 
         M::new(k, alphabet, q0, f, delta);
@@ -265,7 +265,7 @@ mod tests_automata {
         let q0 = "q0".to_string();
         let f = stateset!("q0");
         let delta = delta!(
-            (("q1", 'a'), "q0")
+            ("q1", 'a', "q0")
         );
 
         M::new(k, alphabet, q0, f, delta);
@@ -282,7 +282,7 @@ mod tests_automata {
         let q0 = "q0".to_string();
         let f = stateset!("q0");
         let delta = delta!(
-            (("q0", 'z'), "q0")
+            ("q0", 'z', "q0")
         );
 
 
@@ -299,7 +299,7 @@ mod tests_automata {
         let q0 = "q0".to_string();
         let f = stateset!("q0");
         let delta = delta!(
-            (("q0", 'a'), "invalid")
+            ("q0", 'a', "invalid")
         );
 
 
@@ -318,10 +318,10 @@ mod tests_automata {
         let alphabet = alphabet!('a', 'b');
 
         let delta = delta!(
-            (("q0", 'a'), "q1"),
-            (("q0", 'a'), "q2"),
-            (("q0", 'b'), "q1"),
-            (("q1", 'a'), "q2")
+            ("q0", 'a', "q1"),
+            ("q0", 'a', "q2"),
+            ("q0", 'b', "q1"),
+            ("q1", 'a', "q2")
         );
 
         let delta_inner = to_delta_inner(delta, &states, &alphabet);

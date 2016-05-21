@@ -83,7 +83,7 @@ pub fn afndl_to_afd(m: &M) -> M {
                 }
 
                 k.insert(u.clone());
-                delta.insert( ((stateset_name(&t), *a), stateset_name(&u)) );
+                delta.insert( (stateset_name(&t), *a, stateset_name(&u)) );
             }
         }
     }
@@ -108,8 +108,8 @@ mod tests {
         let q0 = "q0".to_string();
         let f = stateset!("q1");
         let delta = delta!(
-            (("q0", 'λ'), "q2"),
-            (("q0", 'b'), "q1")
+            ("q0", 'λ', "q2"),
+            ("q0", 'b', "q1")
         );
 
         let automata = M::new(k, alphabet, q0, f, delta);
@@ -127,10 +127,10 @@ mod tests {
         let q0 = "q0".to_string();
         let f = stateset!("q1");
         let delta = delta!(
-            (("q0", 'a'), "q1"),
-            (("q0", 'b'), "q0"),
-            (("q1", 'λ'), "q2"),
-            (("q1", 'b'), "q1")
+            ("q0", 'a', "q1"),
+            ("q0", 'b', "q0"),
+            ("q1", 'λ', "q2"),
+            ("q1", 'b', "q1")
         );
 
         let automata = M::new(k, alphabet, q0, f, delta);
@@ -150,13 +150,13 @@ mod tests {
         let q0 = "q0".to_string();
         let f = stateset!("q5");
         let delta = delta!(
-            (("q0", 'a'), "q1"),
-            (("q0", 'a'), "q2"),
-            (("q1", 'b'), "q3"),
-            (("q2", 'a'), "q4"),
-            (("q3", 'λ'), "q2"),
-            (("q4", 'λ'), "q3"),
-            (("q4", 'b'), "q5")
+            ("q0", 'a', "q1"),
+            ("q0", 'a', "q2"),
+            ("q1", 'b', "q3"),
+            ("q2", 'a', "q4"),
+            ("q3", 'λ', "q2"),
+            ("q4", 'λ', "q3"),
+            ("q4", 'b', "q5")
         );
 
         let afndl = M::new(k, alphabet, q0, f, delta);
