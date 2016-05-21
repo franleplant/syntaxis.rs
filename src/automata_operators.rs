@@ -1,4 +1,4 @@
-use automata::{M, State, StateSet};
+use automata::{M, State, StateSet, TRAP_STATE};
 use std::collections::{BTreeSet};
 use std::cmp::Ord;
 
@@ -27,14 +27,15 @@ pub fn lambda_closure(q: &StateSet, m: &M) -> StateSet{
             }
             marked.insert(t.clone());
 
-            if let Some(next_states) = m.get_next_states(t, &'λ') {
-                for ns in next_states.iter() {
-                    closure.insert(ns.clone());
-                }
+            let next_states = m.get_next_states(t, &'λ');
+            for ns in next_states.iter() {
+                closure.insert(ns.clone());
             }
         }
     }
 
+    //TODO: temporary fix
+    closure.remove(TRAP_STATE);
     closure
 }
 
@@ -43,10 +44,9 @@ pub fn mover(q: &StateSet, a: char, m: &M) -> StateSet {
     let mut x = BTreeSet::new();
     for t in q.iter() {
 
-        if let Some(next_states) = m.get_next_states(t, &a) {
-            for ns in next_states.iter() {
-                x.insert(ns.clone());
-            }
+        let next_states = m.get_next_states(t, &a);
+        for ns in next_states.iter() {
+            x.insert(ns.clone());
         }
 
     }
@@ -97,12 +97,12 @@ pub fn afndl_to_afd(m: &M) -> M {
 //TODO: add more tests
 #[cfg(test)]
 mod tests {
-    use automata::{M};
-    use super::{btreeset_eq, lambda_closure, mover, afndl_to_afd};
     use std::collections::{BTreeSet};
 
     #[test]
     fn lambda_closure_test() {
+        use super::{lambda_closure};
+        use automata::{M};
         let k = stateset!("q0", "q1", "q2");
         let alphabet = alphabet!('b');
         let q0 = "q0".to_string();
@@ -114,14 +114,17 @@ mod tests {
 
         let automata = M::new(k, alphabet, q0, f, delta);
 
+
         let q = stateset!("q0");
         let expected = stateset!("q0", "q2");
         let actual = lambda_closure(&q, &automata);
-        assert!(actual.is_subset(&expected) && expected.is_subset(&actual));
+        assert!(expected == actual);
     }
 
     #[test]
     fn mover_test() {
+        use automata::{M};
+        use super::{mover};
         let k = stateset!("q0", "q1", "q2");
         let alphabet = alphabet!('a', 'b');
         let q0 = "q0".to_string();
@@ -139,12 +142,14 @@ mod tests {
         let q = stateset!("q0");
         let expected = stateset!("q1", "q2");
         let actual = mover(&q, 'a', &automata);
-        assert!(actual.is_subset(&expected) && expected.is_subset(&actual));
+        assert!(expected == actual);
     }
 
 
     #[test]
     fn afndl_to_afd_test() {
+        use super::{afndl_to_afd};
+        use automata::{M, to_delta_inner};
         let k = stateset!("q0", "q1", "q2", "q3", "q4", "q5");
         let alphabet = alphabet!('a', 'b');
         let q0 = "q0".to_string();
@@ -163,74 +168,35 @@ mod tests {
 
         let afd: M = afndl_to_afd(&afndl);
 
-        let k_expected = stateset!("q0", "q1q2", "q2q3q4trap_state", "q2q3trap_state", "q5trap_state", "trap_state");
+        let k_expected = stateset!("q0", "q1q2", "q2q3q4", "q2q3", "q5");
         //print_delta(&afd.delta);
 
-        assert!( btreeset_eq(&afd.k, &k_expected) );
+        //println!("MOFO! {:?}", afd.k);
+        assert!( afd.k  == k_expected );
 
-        assert!( btreeset_eq(&afd.alphabet, &afndl.alphabet) );
+        assert!( afd.alphabet == afndl.alphabet );
 
-        let f_expected = stateset!("q5trap_state");
-        assert!( btreeset_eq(&afd.f, &f_expected) );
+        let f_expected = stateset!("q5");
+        assert!( afd.f == f_expected );
 
         assert!(afd.q0 == "q0");
 
 
-        //TODO: might be good to create a new delta, run to_delta_inner
-        //and compare the two BTreeMaps directly
-        assert!(
-            afd.get_next_states(&"q0".to_string(), &'a').unwrap()
-                .contains(&"q1q2".to_string())
-        );
-        assert!(
-            afd.get_next_states(&"q0".to_string(), &'b').unwrap()
-                .contains(&"trap_state".to_string())
-        );
-
-        assert!(
-            afd.get_next_states(&"q1q2".to_string(), &'a').unwrap()
-                .contains(&"q2q3q4trap_state".to_string())
-        );
-        assert!(
-            afd.get_next_states(&"q1q2".to_string(), &'b').unwrap()
-                .contains(&"q2q3trap_state".to_string())
+        let delta_expected = delta!(
+            ("q0",     'a', "q1q2"  ),
+            ("q1q2",   'a', "q2q3q4"),
+            ("q1q2",   'b', "q2q3"  ),
+            ("q2q3q4", 'a', "q2q3q4"),
+            ("q2q3q4", 'b', "q5"    ),
+            ("q2q3",   'a', "q2q3q4"),
+            ("q0",     'a', "q1q2"  )
         );
 
-        assert!(
-            afd.get_next_states(&"q2q3q4trap_state".to_string(), &'a').unwrap()
-                .contains(&"q2q3q4trap_state".to_string())
-        );
-        assert!(
-            afd.get_next_states(&"q2q3q4trap_state".to_string(), &'b').unwrap()
-                .contains(&"q5trap_state".to_string())
-        );
+        let delta_expected = to_delta_inner(delta_expected);
 
-        assert!(
-            afd.get_next_states(&"q2q3trap_state".to_string(), &'a').unwrap()
-                .contains(&"q2q3q4trap_state".to_string())
-        );
-        assert!(
-            afd.get_next_states(&"q2q3trap_state".to_string(), &'b').unwrap()
-                .contains(&"trap_state".to_string())
-        );
+        assert!(afd.delta == delta_expected);
 
-        assert!(
-            afd.get_next_states(&"q5trap_state".to_string(), &'a').unwrap()
-                .contains(&"trap_state".to_string())
-        );
-        assert!(
-            afd.get_next_states(&"q5trap_state".to_string(), &'b').unwrap()
-                .contains(&"trap_state".to_string())
-        );
 
-        assert!(
-            afd.get_next_states(&"trap_state".to_string(), &'a').unwrap()
-                .contains(&"trap_state".to_string())
-        );
-        assert!(
-            afd.get_next_states(&"trap_state".to_string(), &'b').unwrap()
-                .contains(&"trap_state".to_string())
-        );
     }
 }
 

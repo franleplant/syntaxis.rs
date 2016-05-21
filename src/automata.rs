@@ -1,8 +1,6 @@
 use std::collections::{BTreeSet, BTreeMap};
 use std::result;
 
-//TODO: change the type of Delta to simpler (s,a,ns)
-
 pub type State = String;
 pub type StateSet = BTreeSet<State>;
 pub type Delta = BTreeSet<(State, char, State)>;
@@ -14,42 +12,65 @@ pub type Result = result::Result<(), ()>;
 
 pub static TRAP_STATE: &'static str = "trap_state";
 
-fn to_delta_inner(delta_input: Delta, k: &StateSet, alphabet: &Alphabet) -> DeltaMap {
+//fn to_delta_inner(delta_input: Delta, k: &StateSet, alphabet: &Alphabet) -> DeltaMap {
 
-    let mut next_states = BTreeSet::new();
-    next_states.insert(TRAP_STATE.to_string());
+    //let mut next_states = BTreeSet::new();
+    //next_states.insert(TRAP_STATE.to_string());
 
-    let mut alphabet_map: DeltaValue = BTreeMap::new();
-    for a in alphabet.iter() {
-        alphabet_map.insert(a.clone(), next_states.clone());
-    }
+    //let mut alphabet_map: DeltaValue = BTreeMap::new();
+    //for a in alphabet.iter() {
+        //alphabet_map.insert(a.clone(), next_states.clone());
+    //}
 
+    //let mut delta: DeltaMap = BTreeMap::new();
+    //for s in k.iter() {
+        //delta.insert(s.clone(), alphabet_map.clone());
+    //}
+
+
+    //for &(ref s, a, ref ns) in delta_input.iter() {
+        ////This never fails
+        //let mut delta_value: &mut DeltaValue = delta.get_mut(s).unwrap();
+
+        ////Special case for lambda since we dont want deterministic
+        ////automatas to have dummy lambda transitions.
+        ////Only add them when necessary
+        //if a == 'λ' && !delta_value.contains_key(&a) {
+            //let next_states = BTreeSet::new();
+            //delta_value.insert(a, next_states);
+        //}
+
+        //let mut next_states: &mut StateSet = delta_value.get_mut(&a).unwrap();
+
+        //next_states.remove(&TRAP_STATE.to_string());
+        //next_states.insert(ns.clone());
+    //}
+
+
+    //delta.insert(TRAP_STATE.to_string().clone(), alphabet_map.clone());
+
+    //delta
+//}
+pub fn to_delta_inner(delta_input: Delta) -> DeltaMap {
+    let next_states_blueprint: StateSet = BTreeSet::new();
+    let delta_value_blueprint: DeltaValue = BTreeMap::new();
     let mut delta: DeltaMap = BTreeMap::new();
-    for s in k.iter() {
-        delta.insert(s.clone(), alphabet_map.clone());
-    }
-
 
     for &(ref s, a, ref ns) in delta_input.iter() {
-        //This never fails
-        let mut delta_value: &mut DeltaValue = delta.get_mut(s).unwrap();
+        let mut delta_value: DeltaValue = match delta.get(s) {
+            Some(delta_value) => delta_value.clone(),
+            None => delta_value_blueprint.clone()
+        };
 
-        //Special case for lambda since we dont want deterministic
-        //automatas to have dummy lambda transitions.
-        //Only add them when necessary
-        if a == 'λ' && !delta_value.contains_key(&a) {
-            let next_states = BTreeSet::new();
-            delta_value.insert(a, next_states);
-        }
+        let mut next_states: StateSet = match delta_value.get(&a) {
+            Some(next_states) => next_states.clone(),
+            None => next_states_blueprint.clone()
+        };
 
-        let mut next_states: &mut StateSet = delta_value.get_mut(&a).unwrap();
-
-        next_states.remove(&TRAP_STATE.to_string());
         next_states.insert(ns.clone());
+        delta_value.insert(a, next_states);
+        delta.insert(s.clone(), delta_value);
     }
-
-
-    delta.insert(TRAP_STATE.to_string().clone(), alphabet_map.clone());
 
     delta
 }
@@ -91,7 +112,6 @@ impl M {
         }
 
         // Check that each element of delta belongs to either K or Alphabet
-        // TODO: use the faster DeltaMap structure to run this runtime check
         for &(ref current_state, c, ref next_state) in &delta {
             if !k.contains(current_state) {
                 panic!("Delta is incorrect. In {:?} rule, \"{}\" does not belong to K", (current_state, c, next_state), current_state)
@@ -106,7 +126,7 @@ impl M {
             }
         }
 
-        let delta = to_delta_inner(delta, &k, &alphabet);
+        let delta = to_delta_inner(delta);
 
 
         M {
@@ -124,7 +144,7 @@ impl M {
             return Err(())
         }
 
-        let next_states = try!(self.get_next_states(&self.state, &c).ok_or( () ));
+        let next_states = self.get_next_states(&self.state, &c);
 
         if next_states.len() > 1 {
             println!("None determinist automata: found more than one next state for a given state and char");
@@ -166,14 +186,14 @@ impl M {
         self.end()
     }
 
-    pub fn get_next_states(&self, state: &State, a: &char) -> Option<StateSet> {
+    pub fn get_next_states(&self, state: &State, a: &char) -> StateSet {
         if let Some(delta_value) = self.delta.get(state) {
             if let Some(next_states) = delta_value.get(a) {
-                return Some(next_states.clone())
+                return next_states.clone()
             }
         }
 
-        None
+        stateset!(TRAP_STATE)
     }
 }
 
@@ -220,7 +240,7 @@ mod tests_automata {
 
         let automata = M::new(k, alphabet, q0, f, delta);
 
-        let ns = automata.get_next_states(&"q0".to_string(), &'a').unwrap();
+        let ns = automata.get_next_states(&"q0".to_string(), &'a');
         assert!(ns.contains(&"q1".to_string()));
     }
 
@@ -314,8 +334,8 @@ mod tests_automata {
 
         use super::{DeltaValue, to_delta_inner};
 
-        let states = stateset!("q0", "q1", "q2");
-        let alphabet = alphabet!('a', 'b');
+        //let states = stateset!("q0", "q1", "q2");
+        //let alphabet = alphabet!('a', 'b');
 
         let delta = delta!(
             ("q0", 'a', "q1"),
@@ -324,8 +344,8 @@ mod tests_automata {
             ("q1", 'a', "q2")
         );
 
-        let delta_inner = to_delta_inner(delta, &states, &alphabet);
-        println!("asdasdasd {:?}", delta_inner);
+        let delta_inner = to_delta_inner(delta);
+        //println!("asdasdasd {:?}", delta_inner);
 
         assert!(delta_inner.contains_key(&"q0".to_string()));
         assert!(delta_inner.contains_key(&"q1".to_string()));
