@@ -1,10 +1,10 @@
 use automata::{M};
 
-type RelationMatrixRow = Vec<bool>;
-type RelationMatrix = Vec<RelationMatrixRow>;
+pub type RelationMatrixRow = Vec<bool>;
+pub type RelationMatrix = Vec<RelationMatrixRow>;
 
 
-fn get_relation_matrix(m: &M) -> RelationMatrix {
+pub fn get_relation_matrix(m: &M) -> RelationMatrix {
     let mut matrix: RelationMatrix = Vec::new();
 
     for qi in m.k.iter() {
@@ -27,16 +27,23 @@ fn get_relation_matrix(m: &M) -> RelationMatrix {
 }
 
 
-    //# Calculate Warshal on the relation matrix
-    //for k in n:
-        //for i in n:
-            //for j in n:
-                //T[i][j] = T[i][j] or ( T[i][k] and T[k][j] )
+pub fn warshall(matrix: &RelationMatrix) -> RelationMatrix {
+    let n = matrix.len();
+    let mut r = matrix.clone();
+
+    for k in 0..n {
+        for i in 0..n {
+            for j in 0..n {
+                r[i][j] = r[i][j] || ( r[i][k] && r[k][j] )
+            }
+        }
+    }
+
+    r
+}
 
 #[cfg(test)]
 mod tests {
-
-
     #[test]
     fn get_relation_matrix_test() {
         use super::get_relation_matrix;
@@ -71,4 +78,21 @@ mod tests {
         assert!(rm == rm_expected);
     }
 
+    #[test]
+    fn warshall_test() {
+        use super::warshall;
+
+        let rm = vec![
+            vec![true, true, false, false],
+            vec![false, true, true, false],
+            vec![true, false, true, false],
+            vec![false, false, false, true]
+        ];
+
+        let r = warshall(&rm);
+        for i in r {
+            println!("{:?}", i);
+        }
+
+    }
 }
