@@ -139,11 +139,7 @@ impl M {
         }
     }
 
-    pub fn next(&mut self, c: char) -> Result {
-        if !self.alphabet.contains(&c) {
-            return Err(())
-        }
-
+    pub fn next(&mut self, c: char) {
         let next_states = self.get_next_states(&self.state, &c);
 
         if next_states.len() > 1 {
@@ -153,8 +149,6 @@ impl M {
         for next_state in next_states.iter().take(1) {
             self.state = next_state.clone();
         }
-
-        Ok(())
     }
 
     pub fn end(&mut self) -> Result {
@@ -164,6 +158,7 @@ impl M {
             success = true;
         }
 
+        //Reset the automata state
         self.state = self.q0.clone();
 
         if success {
@@ -177,10 +172,7 @@ impl M {
         self.state = self.q0.clone();
 
         for c in String::from(string).chars() {
-            let res = self.next(c);
-            if res.is_err() {
-                return Err(())
-            }
+            self.next(c);
         }
 
         self.end()

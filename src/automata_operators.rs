@@ -1,12 +1,8 @@
 use automata::{M, State, StateSet, TRAP_STATE};
 use std::collections::{BTreeSet};
-use std::cmp::Ord;
 
 //TODO: M -> better state names M
 
-pub fn btreeset_eq<T: Ord>(a: &BTreeSet<T>, b: &BTreeSet<T>) -> bool {
-    a.is_subset(&b) && b.is_subset(&a)
-}
 
 pub fn stateset_name(states: &StateSet) -> String {
     let states_vec: Vec<State> = states.iter().cloned().collect();
@@ -18,8 +14,7 @@ pub fn lambda_closure(q: &StateSet, m: &M) -> StateSet{
     let mut closure: StateSet = q.clone();
     let mut marked: StateSet = BTreeSet::new();
 
-    // while closure and marked are not equal
-    while !btreeset_eq(&closure, &marked) {
+    while closure != marked {
         let l = closure.clone();
         for t in l.iter() {
             if marked.contains(t) {
@@ -67,8 +62,7 @@ pub fn afndl_to_afd(m: &M) -> M {
     let mut delta = delta!();
     let mut marked = BTreeSet::new();
 
-    // while k and marked are not equal
-    while !btreeset_eq(&k, &marked) {
+    while k != marked {
         //t: StateSet
         for t in k.clone().difference(&marked.clone()) {
             marked.insert(t.clone());
@@ -118,6 +112,8 @@ mod tests {
         let q = stateset!("q0");
         let expected = stateset!("q0", "q2");
         let actual = lambda_closure(&q, &automata);
+        println!("MOFO");
+        println!("{:?}, {:?}", actual, expected);
         assert!(expected == actual);
     }
 
