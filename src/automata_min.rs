@@ -60,6 +60,17 @@ pub fn get_reachable_states(m: &M, r: &RelationMatrix) -> StateSet {
     reachable_states
 }
 
+
+pub fn remove_unreachable_states(mut m: M, reachable_states: StateSet) -> M {
+    for u in m.k.difference(&reachable_states) {
+        let _ = m.delta.remove(u);
+    }
+
+    m.k = reachable_states;
+
+    m
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -161,5 +172,47 @@ mod tests {
         //}
 
         assert!(states == states_expected);
+    }
+
+    #[test]
+    fn remove_unreachable_states_test() {
+        use super::remove_unreachable_states;
+        use automata::{M, to_delta_inner};
+
+        let k = stateset!("q0", "q1", "q2", "q3");
+        let alphabet = alphabet!('a', 'b');
+        let q0 = "q0".to_string();
+        let f = stateset!("q1");
+        let delta = delta!(
+            ("q0", 'a', "q0"),
+            ("q0", 'b', "q1"),
+            ("q1", 'a', "q1"),
+            ("q1", 'b', "q2"),
+            ("q2", 'a', "q0"),
+            ("q2", 'b', "q2"),
+            ("q3", 'a', "q3")
+        );
+
+
+        let m = M::new(k, alphabet, q0, f, delta);
+        let reachable_states = stateset!("q0", "q1", "q2");
+
+        let m_new = remove_unreachable_states(m, reachable_states.clone());
+
+
+        let delta_expected = delta!(
+            ("q0", 'a', "q0"),
+            ("q0", 'b', "q1"),
+            ("q1", 'a', "q1"),
+            ("q1", 'b', "q2"),
+            ("q2", 'a', "q0"),
+            ("q2", 'b', "q2")
+        );
+
+        let delta_expected = to_delta_inner(delta_expected);
+
+
+        assert!(m_new.k == reachable_states);
+        assert!(m_new.delta == delta_expected);
     }
 }
