@@ -192,7 +192,6 @@ impl M {
 #[cfg(test)]
 mod tests_automata {
     use super::M;
-    use std::collections::BTreeSet;
 
     #[test]
     fn basic_functionality() {

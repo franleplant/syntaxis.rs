@@ -91,7 +91,6 @@ pub fn afndl_to_afd(m: &M) -> M {
 //TODO: add more tests
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeSet};
 
     #[test]
     fn lambda_closure_test() {
