@@ -1,5 +1,6 @@
 use std::collections::{BTreeSet};
 use automata::{M, StateSet, State};
+use automata_operators::stateset_name;
 
 pub type RelationMatrixRow = Vec<bool>;
 pub type RelationMatrix = Vec<RelationMatrixRow>;
@@ -147,6 +148,36 @@ pub fn get_quotient(m: &M) -> Quotient {
     }
 
     quotient
+}
+
+pub fn apply_quotient(m: &M, quotient: &Quotient) -> M {
+    let states: StateSet = quotient.iter().map(|eq_class| stateset_name(eq_class)).collect();
+
+    let q0 = stateset_name(&get_equivalence_class(&stateset!(m.q0), quotient));
+    let mut f = stateset!();
+    for state in &m.f {
+        let final_state = stateset_name(&get_equivalence_class(&stateset!(state), quotient));
+        f.insert(final_state);
+    }
+
+    let mut delta = delta!();
+    for (state, delta_value) in &m.delta {
+        for (a, next_states) in delta_value {
+            for next_state in next_states {
+                let s = stateset_name(&get_equivalence_class(&stateset!(state), quotient));
+                let ns = stateset_name(&get_equivalence_class(&stateset!(next_state), quotient));
+                delta.insert( (s, a.clone(), ns) );
+            }
+        }
+    }
+
+    M::new(
+        states,
+        m.alphabet.clone(),
+        q0,
+        f,
+        delta
+    )
 }
 
 
@@ -327,5 +358,49 @@ mod tests {
 
 
         assert_eq!(quotient, quotient_expected);
+    }
+
+    #[test]
+    fn apply_quotient_test() {
+        use std::collections::{BTreeSet};
+        use super::{Quotient, apply_quotient};
+        use automata::{M, to_delta_inner};
+
+        let k = stateset!("q0", "q1", "q2", "q3");
+        let alphabet = alphabet!('a', 'b');
+        let q0 = "q0".to_string();
+        let f = stateset!("q3");
+        let delta = delta!(
+            ("q0", 'a', "q1"),
+            ("q0", 'b', "q2"),
+            ("q1", 'a', "q3"),
+            ("q2", 'a', "q3")
+        );
+
+        let m = M::new(k, alphabet, q0, f, delta);
+
+        let quotient: Quotient = {
+            let mut q = BTreeSet::new();
+            q.insert(stateset!("q0"));
+            q.insert(stateset!("q1", "q2"));
+            q.insert(stateset!("q3"));
+            q
+        };
+
+        let min_m = apply_quotient(&m, &quotient);
+
+        let delta_expected = delta!(
+            ("q0", 'a', "q1q2"),
+            ("q0", 'b', "q1q2"),
+            ("q1q2", 'a', "q3")
+        );
+
+
+
+        assert_eq!(min_m.alphabet, m.alphabet);
+        assert_eq!(min_m.k, stateset!("q0", "q1q2", "q3"));
+        assert_eq!(min_m.q0, "q0");
+        assert_eq!(min_m.f, stateset!("q3"));
+        assert_eq!(min_m.delta, to_delta_inner(delta_expected));
     }
 }
