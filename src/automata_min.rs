@@ -71,6 +71,86 @@ pub fn remove_unreachable_states(mut m: M, reachable_states: StateSet) -> M {
     m
 }
 
+
+pub type EquivalenceClass = StateSet;
+pub type Quotient = BTreeSet<EquivalenceClass>;
+
+pub fn get_equivalence_class(states: &StateSet, quotient: &Quotient) -> EquivalenceClass {
+    for eq_class in quotient.iter() {
+        if states.is_subset(&eq_class) {
+            return eq_class.clone();
+        }
+    }
+
+    stateset!()
+}
+
+pub fn get_quotient(m: &M) -> Quotient {
+    let k_f: EquivalenceClass = m.k.difference(&m.f).cloned().collect();
+    let f: EquivalenceClass = m.f.clone();
+
+    let mut quotient: Quotient = {
+        let mut q = BTreeSet::new();
+        q.insert(k_f);
+        q.insert(f);
+        q
+    };
+
+    let mut fin = false;
+
+    while !fin {
+        let mut next_quotient: Quotient = BTreeSet::new();
+        for x in &quotient {
+            let mut x_marked: EquivalenceClass = BTreeSet::new();
+
+            while x != &x_marked {
+                for state in x {
+                    if x_marked.contains(state) { continue }
+                    println!("STATE {:?}", state);
+                    let mut x1: EquivalenceClass = stateset!(state);
+
+                    x_marked.insert(state.clone());
+
+                    for other_state in x {
+                        if x_marked.contains(other_state) { continue }
+                        println!("OTHER_STATE {:?}", other_state);
+                        let mut flag = true;
+                        for a in &m.alphabet {
+                            let state_eq_class = get_equivalence_class(&m.get_next_states(&state, &a), &quotient);
+                            let other_state_eq_class = get_equivalence_class(&m.get_next_states(&other_state, &a), &quotient);
+                            if  state_eq_class == other_state_eq_class  {
+                                flag = flag && true
+                            } else {
+                                flag = flag && false
+                            }
+                        }
+                        if flag {
+                            println!("SAME CLASS {:?}, {:?}", state, other_state);
+                            x1.insert(other_state.clone());
+                            x_marked.insert(other_state.clone());
+                        }
+                    }
+
+                    next_quotient.insert(x1);
+                }
+            }
+        }
+
+        println!("     QUOTIENT {:?}", quotient);
+        println!("Next QUOTIENT {:?}", next_quotient);
+        if next_quotient != quotient {
+            quotient = next_quotient;
+            fin = false;
+        } else {
+            fin = true;
+        }
+    }
+
+    quotient
+}
+
+
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -214,5 +294,38 @@ mod tests {
 
         assert!(m_new.k == reachable_states);
         assert!(m_new.delta == delta_expected);
+    }
+
+    #[test]
+    fn get_quotient_test() {
+        use std::collections::{BTreeSet};
+        use super::{Quotient, get_quotient};
+        use automata::{M};
+
+        let k = stateset!("q0", "q1", "q2", "q3");
+        let alphabet = alphabet!('a', 'b');
+        let q0 = "q0".to_string();
+        let f = stateset!("q3");
+        let delta = delta!(
+            ("q0", 'a', "q1"),
+            ("q0", 'b', "q2"),
+            ("q1", 'a', "q3"),
+            ("q2", 'a', "q3")
+        );
+
+        let m = M::new(k, alphabet, q0, f, delta);
+
+        let quotient: Quotient = get_quotient(&m);
+        let quotient_expected: Quotient = {
+            let mut q = BTreeSet::new();
+            q.insert(stateset!("q0"));
+            q.insert(stateset!("q1", "q2"));
+            q.insert(stateset!("q3"));
+            q
+        };
+
+
+
+        assert_eq!(quotient, quotient_expected);
     }
 }
