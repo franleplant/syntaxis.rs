@@ -107,13 +107,8 @@ mod tests {
 
         let automata = M::new(k, alphabet, q0, f, delta);
 
-
         let q = stateset!("q0");
-        let expected = stateset!("q0", "q2");
-        let actual = lambda_closure(&q, &automata);
-        println!("MOFO");
-        println!("{:?}, {:?}", actual, expected);
-        assert!(expected == actual);
+        assert_eq!(lambda_closure(&q, &automata), stateset!("q0", "q2"));
     }
 
     #[test]
@@ -133,11 +128,7 @@ mod tests {
 
         let automata = M::new(k, alphabet, q0, f, delta);
 
-
-        let q = stateset!("q0");
-        let expected = stateset!("q1", "q2");
-        let actual = mover(&q, 'a', &automata);
-        assert!(expected == actual);
+        assert_eq!(mover(&stateset!("q0"), 'a', &automata), stateset!("q1", "q2"));
     }
 
 
@@ -163,18 +154,10 @@ mod tests {
 
         let afd: M = afndl_to_afd(&afndl);
 
-        let k_expected = stateset!("q0", "q1q2", "q2q3q4", "q2q3", "q5");
-        //print_delta(&afd.delta);
-
-        //println!("MOFO! {:?}", afd.k);
-        assert!( afd.k  == k_expected );
-
-        assert!( afd.alphabet == afndl.alphabet );
-
-        let f_expected = stateset!("q5");
-        assert!( afd.f == f_expected );
-
-        assert!(afd.q0 == "q0");
+        assert_eq!(afd.k, stateset!("q0", "q1q2", "q2q3q4", "q2q3", "q5"));
+        assert_eq!(afd.alphabet, afndl.alphabet);
+        assert_eq!(afd.f, stateset!("q5") );
+        assert_eq!(afd.q0, "q0");
 
 
         let delta_expected = delta!(
@@ -187,11 +170,7 @@ mod tests {
             ("q0",     'a', "q1q2"  )
         );
 
-        let delta_expected = to_delta_inner(delta_expected);
-
-        assert!(afd.delta == delta_expected);
-
-
+        assert_eq!(afd.delta, to_delta_inner(delta_expected));
     }
 }
 

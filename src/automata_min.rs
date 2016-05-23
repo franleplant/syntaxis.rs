@@ -207,10 +207,6 @@ mod tests {
         let m = M::new(k, alphabet, q0, f, delta);
 
         let rm = get_relation_matrix(&m);
-        //for i in rm {
-            //println!("{:?}", i);
-        //}
-
         let rm_expected = vec![
             vec![true, true, false, false],
             vec![false, true, true, false],
@@ -218,7 +214,7 @@ mod tests {
             vec![false, false, false, true]
         ];
 
-        assert!(rm == rm_expected);
+        assert_eq!(rm, rm_expected);
     }
 
     #[test]
@@ -240,11 +236,7 @@ mod tests {
             vec![false, false, false, true]
         ];
 
-        //for i in &r {
-            //println!("{:?}", i);
-        //}
-
-        assert!(r == r_expected);
+        assert_eq!(r, r_expected);
     }
 
     #[test]
@@ -278,11 +270,7 @@ mod tests {
         let states = get_reachable_states(&m, &r);
         let states_expected = stateset!("q0", "q1", "q2");
 
-        //for i in &states {
-            //println!("{:?}", i);
-        //}
-
-        assert!(states == states_expected);
+        assert_eq!(states, states_expected);
     }
 
     #[test]
@@ -323,8 +311,8 @@ mod tests {
         let delta_expected = to_delta_inner(delta_expected);
 
 
-        assert!(m_new.k == reachable_states);
-        assert!(m_new.delta == delta_expected);
+        assert_eq!(m_new.k, reachable_states);
+        assert_eq!(m_new.delta, delta_expected);
     }
 
     #[test]

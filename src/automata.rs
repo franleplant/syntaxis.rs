@@ -232,7 +232,7 @@ mod tests_automata {
         let automata = M::new(k, alphabet, q0, f, delta);
 
         let ns = automata.get_next_states(&"q0".to_string(), &'a');
-        assert!(ns.contains(&"q1".to_string()));
+        assert_eq!(ns, stateset!("q1"));
     }
 
     #[test]
