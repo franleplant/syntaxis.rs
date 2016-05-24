@@ -62,7 +62,8 @@ pub fn get_reachable_states(m: &M, r: &RelationMatrix) -> StateSet {
 }
 
 
-pub fn remove_unreachable_states(mut m: M, reachable_states: StateSet) -> M {
+pub fn remove_unreachable_states_with_params(m: &M, reachable_states: StateSet) -> M {
+    let mut m: M = (*m).clone();
     for u in m.k.difference(&reachable_states) {
         let _ = m.delta.remove(u);
     }
@@ -181,6 +182,34 @@ pub fn apply_quotient(m: &M, quotient: &Quotient) -> M {
 }
 
 
+//TODO: test
+pub fn remove_unreachable_states(m: &M) -> M {
+    let relation_matrix: RelationMatrix = get_relation_matrix(&m);
+    let r_star: RelationMatrix = warshall(&relation_matrix);
+    let reachable_states: StateSet = get_reachable_states(&m, &r_star);
+    let m: M = remove_unreachable_states_with_params(&m, reachable_states);
+
+    m
+}
+
+//TODO: test
+pub fn minify(m: &M) -> M {
+    let quotient: Quotient = get_quotient(&m);
+    let m: M = apply_quotient(&m, &quotient);
+
+    m
+}
+
+//TODO: test
+// Remove unreachable states and minify the states
+pub fn get_min_automata(m: &M) -> M {
+    let m: M = remove_unreachable_states(m);
+    let m: M = minify(&m);
+
+    m
+}
+
+
 
 #[cfg(test)]
 mod tests {
@@ -274,8 +303,8 @@ mod tests {
     }
 
     #[test]
-    fn remove_unreachable_states_test() {
-        use super::remove_unreachable_states;
+    fn remove_unreachable_states_with_params_test() {
+        use super::remove_unreachable_states_with_params;
         use automata::{M, to_delta_inner};
 
         let k = stateset!("q0", "q1", "q2", "q3");
@@ -296,7 +325,7 @@ mod tests {
         let m = M::new(k, alphabet, q0, f, delta);
         let reachable_states = stateset!("q0", "q1", "q2");
 
-        let m_new = remove_unreachable_states(m, reachable_states.clone());
+        let m_new = remove_unreachable_states_with_params(&m, reachable_states.clone());
 
 
         let delta_expected = delta!(
