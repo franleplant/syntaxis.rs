@@ -3,3 +3,5 @@ pub mod automata;
 pub mod automata_operators;
 pub mod automata_min;
 
+pub mod grammar;
+

@@ -1,5 +1,3 @@
-//use std::collections::{BTreeSet, BTreeMap};
-
 macro_rules! stateset {
     () => {
         {
@@ -56,6 +54,50 @@ macro_rules! delta {
                 temp_delta.insert( ($s.to_string(), $c, $ns.to_string()) );
             )*
             temp_delta
+        }
+    };
+}
+
+
+
+// Grammar
+
+macro_rules! charset {
+    () => {
+        {
+            use std::collections::{BTreeSet};
+            let aux: BTreeSet<char> = BTreeSet::new();
+            aux
+        }
+    };
+    ( $( $c:expr ),* ) => {
+        {
+            use std::collections::{BTreeSet};
+            let mut aux: BTreeSet<char> = BTreeSet::new();
+            $(
+                aux.insert($c);
+            )*
+            aux
+        }
+    };
+}
+
+macro_rules! r_productions {
+    () => {
+        {
+            use std::collections::{BTreeSet};
+            let aux: BTreeSet<(char, String)> = BTreeSet::new();
+            aux
+        }
+    };
+    ( $( ($vn:expr, $chain:expr) ),* ) => {
+        {
+            use std::collections::{BTreeSet};
+            let mut aux: BTreeSet<(char, String)> = BTreeSet::new();
+            $(
+                aux.insert( ($vn, $chain.to_string()) );
+            )*
+            aux
         }
     };
 }

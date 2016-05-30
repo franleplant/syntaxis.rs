@@ -182,7 +182,6 @@ fn apply_quotient(m: &M, quotient: &Quotient) -> M {
 }
 
 
-//TODO: test
 fn remove_unreachable_states(m: &M) -> M {
     let relation_matrix: RelationMatrix = get_relation_matrix(&m);
     let r_star: RelationMatrix = warshall(&relation_matrix);
@@ -192,7 +191,6 @@ fn remove_unreachable_states(m: &M) -> M {
     m
 }
 
-//TODO: test
 pub fn minify(m: &M) -> M {
     let m: M = remove_unreachable_states(m);
     let quotient: Quotient = get_quotient(&m);
