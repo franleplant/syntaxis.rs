@@ -6,7 +6,7 @@ pub type RelationMatrixRow = Vec<bool>;
 pub type RelationMatrix = Vec<RelationMatrixRow>;
 
 
-pub fn get_relation_matrix(m: &M) -> RelationMatrix {
+fn get_relation_matrix(m: &M) -> RelationMatrix {
     let mut matrix: RelationMatrix = Vec::new();
 
     for qi in m.k.iter() {
@@ -29,7 +29,7 @@ pub fn get_relation_matrix(m: &M) -> RelationMatrix {
 }
 
 
-pub fn warshall(matrix: &RelationMatrix) -> RelationMatrix {
+fn warshall(matrix: &RelationMatrix) -> RelationMatrix {
     let n = matrix.len();
     let mut r = matrix.clone();
 
@@ -44,7 +44,7 @@ pub fn warshall(matrix: &RelationMatrix) -> RelationMatrix {
     r
 }
 
-pub fn get_reachable_states(m: &M, r: &RelationMatrix) -> StateSet {
+fn get_reachable_states(m: &M, r: &RelationMatrix) -> StateSet {
     let states: Vec<State> = m.k.iter().cloned().collect();
     let q0_index = m.k.iter().position(|s| *s == m.q0).unwrap();
     let ref reachable_state_row = r[q0_index];
@@ -62,7 +62,7 @@ pub fn get_reachable_states(m: &M, r: &RelationMatrix) -> StateSet {
 }
 
 
-pub fn remove_unreachable_states_with_params(m: &M, reachable_states: StateSet) -> M {
+fn remove_unreachable_states_with_params(m: &M, reachable_states: StateSet) -> M {
     let mut m: M = (*m).clone();
     for u in m.k.difference(&reachable_states) {
         let _ = m.delta.remove(u);
@@ -77,7 +77,7 @@ pub fn remove_unreachable_states_with_params(m: &M, reachable_states: StateSet) 
 pub type EquivalenceClass = StateSet;
 pub type Quotient = BTreeSet<EquivalenceClass>;
 
-pub fn get_equivalence_class(states: &StateSet, quotient: &Quotient) -> EquivalenceClass {
+fn get_equivalence_class(states: &StateSet, quotient: &Quotient) -> EquivalenceClass {
     for eq_class in quotient.iter() {
         if states.is_subset(&eq_class) {
             return eq_class.clone();
@@ -87,7 +87,7 @@ pub fn get_equivalence_class(states: &StateSet, quotient: &Quotient) -> Equivale
     stateset!()
 }
 
-pub fn get_quotient(m: &M) -> Quotient {
+fn get_quotient(m: &M) -> Quotient {
     let k_f: EquivalenceClass = m.k.difference(&m.f).cloned().collect();
     let f: EquivalenceClass = m.f.clone();
 
@@ -151,7 +151,7 @@ pub fn get_quotient(m: &M) -> Quotient {
     quotient
 }
 
-pub fn apply_quotient(m: &M, quotient: &Quotient) -> M {
+fn apply_quotient(m: &M, quotient: &Quotient) -> M {
     let states: StateSet = quotient.iter().map(|eq_class| stateset_name(eq_class)).collect();
 
     let q0 = stateset_name(&get_equivalence_class(&stateset!(m.q0), quotient));
@@ -183,7 +183,7 @@ pub fn apply_quotient(m: &M, quotient: &Quotient) -> M {
 
 
 //TODO: test
-pub fn remove_unreachable_states(m: &M) -> M {
+fn remove_unreachable_states(m: &M) -> M {
     let relation_matrix: RelationMatrix = get_relation_matrix(&m);
     let r_star: RelationMatrix = warshall(&relation_matrix);
     let reachable_states: StateSet = get_reachable_states(&m, &r_star);
@@ -194,17 +194,9 @@ pub fn remove_unreachable_states(m: &M) -> M {
 
 //TODO: test
 pub fn minify(m: &M) -> M {
+    let m: M = remove_unreachable_states(m);
     let quotient: Quotient = get_quotient(&m);
     let m: M = apply_quotient(&m, &quotient);
-
-    m
-}
-
-//TODO: test
-// Remove unreachable states and minify the states
-pub fn get_min_automata(m: &M) -> M {
-    let m: M = remove_unreachable_states(m);
-    let m: M = minify(&m);
 
     m
 }
