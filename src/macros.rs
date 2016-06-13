@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! stateset {
     () => {
         {
@@ -18,6 +19,7 @@ macro_rules! stateset {
     };
 }
 
+#[macro_export]
 macro_rules! alphabet {
     () => {
         {
@@ -38,6 +40,7 @@ macro_rules! alphabet {
     };
 }
 
+#[macro_export]
 macro_rules! delta {
     () => {
         {
@@ -62,6 +65,7 @@ macro_rules! delta {
 
 // Grammar
 
+#[macro_export]
 macro_rules! charset {
     () => {
         {
@@ -82,6 +86,7 @@ macro_rules! charset {
     };
 }
 
+#[macro_export]
 macro_rules! r_productions {
     () => {
         {

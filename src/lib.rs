@@ -1,7 +1,11 @@
-#[macro_use] pub mod macros;
-pub mod automata;
-pub mod automata_operators;
-pub mod automata_min;
+pub use self::automata::*;
+pub use self::automata_operators::*;
+pub use self::automata_min::*;
+pub use self::grammar::*;
 
-pub mod grammar;
-
+#[macro_use]
+mod macros;
+mod automata;
+mod automata_operators;
+mod automata_min;
+mod grammar;
