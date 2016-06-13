@@ -12,45 +12,6 @@ pub type Result = result::Result<(), ()>;
 
 pub static TRAP_STATE: &'static str = "trap_state";
 
-//fn to_delta_inner(delta_input: Delta, k: &StateSet, alphabet: &Alphabet) -> DeltaMap {
-
-    //let mut next_states = BTreeSet::new();
-    //next_states.insert(TRAP_STATE.to_string());
-
-    //let mut alphabet_map: DeltaValue = BTreeMap::new();
-    //for a in alphabet.iter() {
-        //alphabet_map.insert(a.clone(), next_states.clone());
-    //}
-
-    //let mut delta: DeltaMap = BTreeMap::new();
-    //for s in k.iter() {
-        //delta.insert(s.clone(), alphabet_map.clone());
-    //}
-
-
-    //for &(ref s, a, ref ns) in delta_input.iter() {
-        ////This never fails
-        //let mut delta_value: &mut DeltaValue = delta.get_mut(s).unwrap();
-
-        ////Special case for lambda since we dont want deterministic
-        ////automatas to have dummy lambda transitions.
-        ////Only add them when necessary
-        //if a == 'λ' && !delta_value.contains_key(&a) {
-            //let next_states = BTreeSet::new();
-            //delta_value.insert(a, next_states);
-        //}
-
-        //let mut next_states: &mut StateSet = delta_value.get_mut(&a).unwrap();
-
-        //next_states.remove(&TRAP_STATE.to_string());
-        //next_states.insert(ns.clone());
-    //}
-
-
-    //delta.insert(TRAP_STATE.to_string().clone(), alphabet_map.clone());
-
-    //delta
-//}
 pub fn to_delta_inner(delta_input: Delta) -> DeltaMap {
     let next_states_blueprint: StateSet = BTreeSet::new();
     let delta_value_blueprint: DeltaValue = BTreeMap::new();
