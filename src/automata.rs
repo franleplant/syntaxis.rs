@@ -47,7 +47,7 @@ pub fn print_delta(delta: &DeltaMap) {
 
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct M {
     pub k: StateSet,
     pub alphabet: BTreeSet<char>,

@@ -49,7 +49,8 @@ fn get_reachable_states(m: &M, r: &RelationMatrix) -> StateSet {
     let q0_index = m.k.iter().position(|s| *s == m.q0).unwrap();
     let ref reachable_state_row = r[q0_index];
     let reachable_states = {
-        let mut res: StateSet = BTreeSet::new();
+        //q0 is always reachable
+        let mut res: StateSet = stateset!(m.q0.clone());
         for (i, &reachable) in reachable_state_row.iter().enumerate() {
             if reachable {
                 res.insert(states[i].clone());
@@ -108,14 +109,12 @@ fn get_quotient(m: &M) -> Quotient {
             while x != &x_marked {
                 for state in x {
                     if x_marked.contains(state) { continue }
-                    println!("STATE {:?}", state);
                     let mut x1: EquivalenceClass = stateset!(state);
 
                     x_marked.insert(state.clone());
 
                     for other_state in x {
                         if x_marked.contains(other_state) { continue }
-                        println!("OTHER_STATE {:?}", other_state);
                         let mut flag = true;
                         for a in &m.alphabet {
                             let state_eq_class = get_equivalence_class(&m.get_next_states(&state, &a), &quotient);
@@ -127,7 +126,6 @@ fn get_quotient(m: &M) -> Quotient {
                             }
                         }
                         if flag {
-                            println!("SAME CLASS {:?}, {:?}", state, other_state);
                             x1.insert(other_state.clone());
                             x_marked.insert(other_state.clone());
                         }
@@ -138,8 +136,6 @@ fn get_quotient(m: &M) -> Quotient {
             }
         }
 
-        println!("     QUOTIENT {:?}", quotient);
-        println!("Next QUOTIENT {:?}", next_quotient);
         if next_quotient != quotient {
             quotient = next_quotient;
             fin = false;
@@ -235,6 +231,7 @@ mod tests {
 
         assert_eq!(rm, rm_expected);
     }
+
 
     #[test]
     fn warshall_test() {
@@ -409,5 +406,50 @@ mod tests {
         assert_eq!(min_m.q0, "q0");
         assert_eq!(min_m.f, stateset!("q3"));
         assert_eq!(min_m.delta, to_delta_inner(delta_expected));
+    }
+
+
+    /// Important test case for an almost trivial example
+    /// when q0 is only reachable at the start of chain evaluation
+    /// so we need to make sure that q0 is always present in the
+    /// reachable state set by default.
+    #[test]
+    fn remove_unreachable_states_test_case_1() {
+        use super::{remove_unreachable_states};
+        use automata::M;
+        //fd M { k: {"FS", "S"}, alphabet: {'a'}, q0: "S", f: {"FS"}, delta: {"FS": {'a': {"FS"}}, "S": {'a': {"FS"}}}, state: "S" }
+        let k = stateset!("FS", "S");
+        let alphabet = alphabet!('a');
+        let q0 = "S".to_string();
+        let f = stateset!("FS");
+        let delta = delta!(
+            ("S", 'a', "FS"),
+            ("FS", 'a', "FS")
+        );
+
+        let m = M::new(k, alphabet, q0, f, delta);
+        let min_m = remove_unreachable_states(&m);
+
+        assert_eq!(min_m, m);
+    }
+
+    #[test]
+    fn minify_simple_test_case() {
+        use super::{minify};
+        use automata::M;
+        //fd M { k: {"FS", "S"}, alphabet: {'a'}, q0: "S", f: {"FS"}, delta: {"FS": {'a': {"FS"}}, "S": {'a': {"FS"}}}, state: "S" }
+        let k = stateset!("FS", "S");
+        let alphabet = alphabet!('a');
+        let q0 = "S".to_string();
+        let f = stateset!("FS");
+        let delta = delta!(
+            ("S", 'a', "FS"),
+            ("FS", 'a', "FS")
+        );
+
+        let m = M::new(k, alphabet, q0, f, delta);
+        let min_m = minify(&m);
+
+        assert_eq!(min_m, m);
     }
 }
