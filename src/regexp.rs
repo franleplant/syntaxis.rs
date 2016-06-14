@@ -1,4 +1,4 @@
-use automata::{M, State, StateSet, Alphabet, Delta};
+use automata::{M, State, StateSet, Alphabet, Delta, to_delta};
 
 
 fn prefix_state(prefix: &String, s: &State) -> String {
@@ -15,16 +15,11 @@ fn prefix_automata(prefix: &String, m: &M) -> M {
     let mut alphabet = alphabet!();
     let mut delta = delta!();
 
-    //TODO abstract the way we iter over delta
-    for (state, delta_value) in &m.delta {
-        for (a, next_states) in delta_value {
-            for next_state in next_states {
-                let s = prefix_state(&prefix, &state.clone());
-                let c = a.clone();
-                let ns = prefix_state(&prefix, &next_state.clone());
-                delta.insert( (s, c, ns) );
-            }
-        }
+    for (s, c, ns) in to_delta(&m) {
+        let s = prefix_state(&prefix, &s.clone());
+        let c = c.clone();
+        let ns = prefix_state(&prefix, &ns.clone());
+        delta.insert( (s, c, ns) );
     }
 
     M::new(k, m.alphabet.clone(), q0, f, delta)
@@ -66,21 +61,13 @@ fn automata_union(m1: &M, m2: &M, prefix: String) -> M {
     delta.insert( (f1.clone(), 'λ', f.clone()) );
     delta.insert( (f2.clone(), 'λ', f.clone()) );
 
-    for (state, delta_value) in &prefixed_m1.delta {
-        if prefixed_m1.f.contains(state) { continue };
-        for (a, next_states) in delta_value {
-            for next_state in next_states {
-                delta.insert( (state.clone(), a.clone(), next_state.clone()) );
-            }
-        }
+    for (s, a, ns) in to_delta(&prefixed_m1) {
+        if prefixed_m1.f.contains(&s) { continue };
+        delta.insert( (s.clone(), a.clone(), ns.clone()) );
     }
-    for (state, delta_value) in &prefixed_m2.delta {
-        if prefixed_m2.f.contains(state) { continue };
-        for (a, next_states) in delta_value {
-            for next_state in next_states {
-                delta.insert( (state.clone(), a.clone(), next_state.clone()) );
-            }
-        }
+    for (s, a, ns) in to_delta(&prefixed_m2) {
+        if prefixed_m2.f.contains(&s) { continue };
+        delta.insert( (s.clone(), a.clone(), ns.clone()) );
     }
 
     println!("{:?}", k);

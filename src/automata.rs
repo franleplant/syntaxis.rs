@@ -12,6 +12,22 @@ pub type Result = result::Result<(), ()>;
 
 pub static TRAP_STATE: &'static str = "trap_state";
 
+
+//TODO test
+pub fn to_delta(m: &M) -> Delta {
+    let mut delta: Delta = delta!();
+    for (state, delta_value) in &m.delta {
+        for (a, next_states) in delta_value {
+            for next_state in next_states {
+                delta.insert( (state.clone(), a.clone(), next_state.clone()) );
+            }
+        }
+    }
+
+    delta
+}
+
+
 pub fn to_delta_inner(delta_input: Delta) -> DeltaMap {
     let next_states_blueprint: StateSet = BTreeSet::new();
     let delta_value_blueprint: DeltaValue = BTreeMap::new();
