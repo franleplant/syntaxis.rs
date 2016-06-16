@@ -158,6 +158,7 @@ fn apply_quotient(m: &M, quotient: &Quotient) -> M {
     }
 
     let mut delta = delta!();
+    //TODO: Use to_delta
     for (state, delta_value) in &m.delta {
         for (a, next_states) in delta_value {
             for next_state in next_states {

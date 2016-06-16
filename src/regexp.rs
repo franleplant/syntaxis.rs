@@ -12,7 +12,6 @@ fn prefix_automata(prefix: &String, m: &M) -> M {
     let f: StateSet = m.f.iter().cloned().map(|s| prefix_state(&prefix, &s)).collect();
     let k: StateSet = m.k.iter().cloned().map(|s| prefix_state(&prefix, &s)).collect();
 
-    let mut alphabet = alphabet!();
     let mut delta = delta!();
 
     for (s, c, ns) in to_delta(&m) {
@@ -43,7 +42,7 @@ fn automata_union(m1: &M, m2: &M, prefix: String) -> M {
     let q0 = prefix_state(&prefix, &"q0".to_string());
     let f = prefix_state(&prefix, &"f0".to_string());
     let f_set = stateset!(f);
-    let mut alphabet: Alphabet = m1.alphabet.union(&m2.alphabet).cloned().collect();
+    let alphabet: Alphabet = m1.alphabet.union(&m2.alphabet).cloned().collect();
     let mut delta: Delta = delta!();
 
     let k: StateSet ={
@@ -70,17 +69,48 @@ fn automata_union(m1: &M, m2: &M, prefix: String) -> M {
         delta.insert( (s.clone(), a.clone(), ns.clone()) );
     }
 
-    println!("{:?}", k);
-    println!("{:?}", delta);
-    println!("{:?}", q0);
-    println!("{:?}", f_set);
-    println!("{:?}", delta);
 
     M::new(k, alphabet, q0, f_set, delta)
 }
 
-fn automata_intersection(m1: &M, m2: &M) -> M {
-    unimplemented!();
+fn automata_intersection(m1: &M, m2: &M, prefix: String) -> M {
+    let m1_prefix: String = {
+        let mut p = prefix.clone();
+        p.push_str("1");
+        p
+    };
+    let m2_prefix: String = {
+        let mut p = prefix.clone();
+        p.push_str("2");
+        p
+    };
+
+    let prefixed_m1: M = prefix_automata(&m1_prefix, &m1);
+    let prefixed_m2: M = prefix_automata(&m2_prefix, &m2);
+
+    let f1: State =  prefixed_m1.f.iter().cloned().take(1).collect();
+    let f2: State =  prefixed_m2.f.iter().cloned().take(1).collect();
+
+    let q0 = prefixed_m1.q0.clone();
+    let f = f2;
+    let f_set = stateset!(f);
+    let k: StateSet = prefixed_m1.k.union(&prefixed_m2.k).cloned().collect();
+    let alphabet: Alphabet = prefixed_m1.alphabet.union(&prefixed_m2.alphabet).cloned().collect();
+    let mut delta: Delta = delta!();
+
+    delta.insert( (f1.clone(), 'λ', prefixed_m2.q0.clone()) );
+
+    for (s, a, ns) in to_delta(&prefixed_m1) {
+        if prefixed_m1.f.contains(&s) { continue };
+        delta.insert( (s.clone(), a.clone(), ns.clone()) );
+    }
+    for (s, a, ns) in to_delta(&prefixed_m2) {
+        if prefixed_m2.f.contains(&s) { continue };
+        delta.insert( (s.clone(), a.clone(), ns.clone()) );
+    }
+
+
+    M::new(k, alphabet, q0, f_set, delta)
 }
 
 fn automata_star(m1: &M) -> M {
@@ -287,6 +317,49 @@ mod tests {
         );
 
         let m = automata_union(&m1, &m2, "0".to_string());
+
+        assert_eq!(m, m_expected)
+    }
+
+    #[test]
+    fn intersection_test() {
+        use super::automata_intersection;
+
+        let m1 = M::new(
+            stateset!("q0", "q1"),
+            alphabet!('a'),
+            "q0".to_string(),
+            stateset!("q1"),
+            delta!(("q0", 'a', "q1"))
+        );
+
+        let m2 = M::new(
+            stateset!("q0", "q1"),
+            alphabet!('b'),
+            "q0".to_string(),
+            stateset!("q1"),
+            delta!(("q0", 'b', "q1"))
+        );
+
+        let m_expected = M::new(
+            stateset!("01q0", "01q1", "02q0", "02q1"),
+            alphabet!('a', 'b'),
+            "01q0".to_string(),
+            stateset!("02q1"),
+            delta!(
+                ("01q0", 'a', "01q1"),
+                ("01q1", 'λ', "02q0"),
+                ("02q0", 'b', "02q1")
+            )
+        );
+
+        let m = automata_intersection(&m1, &m2, "0".to_string());
+
+        {
+            use automata::print_delta;
+            print_delta(&m.delta);
+            print_delta(&m_expected.delta);
+        }
 
         assert_eq!(m, m_expected)
     }
