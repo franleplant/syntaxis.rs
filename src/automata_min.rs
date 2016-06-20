@@ -1,5 +1,5 @@
 use std::collections::{BTreeSet};
-use automata::{M, StateSet, State};
+use automata::{M, StateSet, State, Delta, to_delta};
 use automata_operators::stateset_name;
 
 pub type RelationMatrixRow = Vec<bool>;
@@ -206,6 +206,7 @@ fn remove_unreachable_states(m: &M) -> M {
     m
 }
 
+// TODO: conditional compilation on the prints
 pub fn minify(m: &M) -> M {
     {
         use automata::print_automata;
@@ -227,6 +228,48 @@ pub fn minify(m: &M) -> M {
     }
 
     m
+}
+
+use std::collections::BTreeMap;
+pub fn pretify_automata(m: &M) -> M {
+    let prefix: String = "Q".to_string();
+    let mut index = 0;
+    let mut rename_map: BTreeMap<State, State> = BTreeMap::new();
+    let mut k: StateSet = stateset!();
+
+
+    //q0
+    {
+        let mut new_name: String = prefix.clone();
+        new_name.push_str(&index.to_string());
+        k.insert(new_name.clone());
+        index += 1;
+        rename_map.insert(m.q0.clone(), new_name);
+    }
+
+
+
+    for s in &m.k {
+        if *s == m.q0 { continue }
+        let mut new_name: String = prefix.clone();
+        new_name.push_str(&index.to_string());
+        k.insert(new_name.clone());
+        rename_map.insert(s.clone(), new_name);
+        index += 1;
+    }
+
+    let q0: State = rename_map.get(&m.q0).unwrap().clone();
+    let f: StateSet = m.f.iter().map(|ref s| rename_map.get(*s).unwrap().clone()).collect();
+
+    let delta: Delta =
+        to_delta(&m)
+        .iter()
+        .map(|&(ref s, a, ref ns)| (rename_map.get(s).unwrap().clone(), a.clone(), rename_map.get(ns).unwrap().clone()) )
+        .collect();
+
+
+
+    M::new(k, m.alphabet.clone(), q0, f, delta)
 }
 
 
@@ -511,5 +554,35 @@ mod tests {
         let min_m = minify(&m);
 
         assert_eq!(min_m, m);
+    }
+
+    #[test]
+    fn pretify_automata_test() {
+        use super::pretify_automata;
+        use automata::M;
+
+        let ugly_m = M::new(
+            stateset!("01q00", "00q01"),
+            alphabet!('a'),
+            "01q00".to_string(),
+            stateset!("00q01"),
+            delta!(
+                ("01q00", 'a', "00q01")
+            )
+        );
+
+        let m_expected = M::new(
+            stateset!("Q0", "Q1"),
+            alphabet!('a'),
+            "Q0".to_string(),
+            stateset!("Q1"),
+            delta!(
+                ("Q0", 'a', "Q1")
+            )
+        );
+
+        let m = pretify_automata(&ugly_m);
+
+        assert_eq!(m, m_expected);
     }
 }

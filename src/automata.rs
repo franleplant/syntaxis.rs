@@ -14,6 +14,7 @@ pub static TRAP_STATE: &'static str = "trap_state";
 
 
 //TODO test
+//TODO: rething if the parameter should be an automata or a DeltaMap
 pub fn to_delta(m: &M) -> Delta {
     let mut delta: Delta = delta!();
     for (state, delta_value) in &m.delta {

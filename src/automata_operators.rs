@@ -1,8 +1,6 @@
 use automata::{M, State, StateSet, TRAP_STATE};
 use std::collections::{BTreeSet};
 
-//TODO: M -> better state names M
-
 
 pub fn stateset_name(states: &StateSet) -> String {
     let states_vec: Vec<State> = states.iter().cloned().collect();
@@ -177,11 +175,12 @@ mod tests {
 
 
 
-    // Special test case for automatas that the initial state is alce final  (i.e. star automatas)
+    // Special test case for automatas that the initial state is also final  (i.e. star automatas)
     #[test]
     fn afndl_to_afd_test_case_1() {
-        use super::{afndl_to_afd};
-        use automata::{M};
+        use super::afndl_to_afd;
+        use automata::M;
+        use automata_min::pretify_automata;
 
         let afndl = M::new(
             stateset!("01q0", "01q1", "0f0", "0q0"),
@@ -198,16 +197,16 @@ mod tests {
         );
 
 
-        let afd: M = afndl_to_afd(&afndl);
+        let afd: M = pretify_automata( &afndl_to_afd(&afndl) );
 
         let m_expected = M::new(
-            stateset!("01q0-01q1-0f0", "01q0-0f0-0q0"),
+            stateset!("Q0", "Q1"),
             afndl.alphabet.clone(),
-            "01q0-0f0-0q0".to_string(),
-            stateset!("01q0-01q1-0f0", "01q0-0f0-0q0"),
+            "Q0".to_string(),
+            stateset!("Q0", "Q1"),
             delta!(
-                ("01q0-01q1-0f0", 'a', "01q0-01q1-0f0"  ),
-                ("01q0-0f0-0q0", 'a', "01q0-01q1-0f0"  )
+                ("Q0", 'a', "Q1"  ),
+                ("Q1", 'a', "Q1"  )
             )
         );
 
