@@ -14,7 +14,7 @@ fn get_relation_matrix(m: &M) -> RelationMatrix {
         for qj in m.k.iter() {
             let mut i_relation_j = false;
 
-            for a in m.alphabet.iter() {
+            for a in m.alphabet.union(&alphabet!('λ')) {
                 if m.get_next_states(qi, &a).contains(qj) {
                     i_relation_j = true
                 }
@@ -179,19 +179,52 @@ fn apply_quotient(m: &M, quotient: &Quotient) -> M {
 }
 
 
+// TODO: conditional compilation on the prints
 fn remove_unreachable_states(m: &M) -> M {
+    {
+        use automata::print_automata;
+        println!("Removing unreachable states: received automata");
+        print_automata(&m);
+    }
     let relation_matrix: RelationMatrix = get_relation_matrix(&m);
+    {
+        println!("relationship matrix");
+        println!("{:?}", relation_matrix);
+    }
     let r_star: RelationMatrix = warshall(&relation_matrix);
+    {
+        println!("relationship matrix star");
+        println!("{:?}", r_star);
+    }
     let reachable_states: StateSet = get_reachable_states(&m, &r_star);
+    {
+        println!("reachable states");
+        println!("{:?}", reachable_states);
+    }
     let m: M = remove_unreachable_states_with_params(&m, reachable_states);
 
     m
 }
 
 pub fn minify(m: &M) -> M {
+    {
+        use automata::print_automata;
+        println!("MINIFICATION: received automata");
+        print_automata(&m);
+    }
     let m: M = remove_unreachable_states(m);
+    {
+        use automata::print_automata;
+        println!("MINIFICATION: automata without unreachable states");
+        print_automata(&m);
+    }
     let quotient: Quotient = get_quotient(&m);
     let m: M = apply_quotient(&m, &quotient);
+    {
+        use automata::print_automata;
+        println!("MINIFICATION: min automata");
+        print_automata(&m);
+    }
 
     m
 }
@@ -369,7 +402,7 @@ mod tests {
     fn apply_quotient_test() {
         use std::collections::{BTreeSet};
         use super::{Quotient, apply_quotient};
-        use automata::{M, to_delta_inner};
+        use automata::{M};
 
         let k = stateset!("q0", "q1", "q2", "q3");
         let alphabet = alphabet!('a', 'b');
@@ -394,19 +427,19 @@ mod tests {
 
         let min_m = apply_quotient(&m, &quotient);
 
-        let delta_expected = delta!(
-            ("q0", 'a', "q1q2"),
-            ("q0", 'b', "q1q2"),
-            ("q1q2", 'a', "q3")
+        let m_expected = M::new(
+            stateset!("q0", "q1-q2", "q3"),
+            m.alphabet.clone(),
+            "q0".to_string(),
+            stateset!("q3"),
+            delta!(
+                ("q0", 'a', "q1-q2"),
+                ("q0", 'b', "q1-q2"),
+                ("q1-q2", 'a', "q3")
+            )
         );
 
-
-
-        assert_eq!(min_m.alphabet, m.alphabet);
-        assert_eq!(min_m.k, stateset!("q0", "q1q2", "q3"));
-        assert_eq!(min_m.q0, "q0");
-        assert_eq!(min_m.f, stateset!("q3"));
-        assert_eq!(min_m.delta, to_delta_inner(delta_expected));
+        assert_eq!(min_m, m_expected);
     }
 
 
@@ -426,6 +459,32 @@ mod tests {
         let delta = delta!(
             ("S", 'a', "FS"),
             ("FS", 'a', "FS")
+        );
+
+        let m = M::new(k, alphabet, q0, f, delta);
+        let min_m = remove_unreachable_states(&m);
+
+        assert_eq!(min_m, m);
+    }
+
+    // Test case 2
+    // Special case for lambda transitions
+    #[test]
+    fn remove_unreachable_states_test_case_2() {
+        use automata::M;
+        use super::{remove_unreachable_states};
+
+        let k = stateset!("01q0", "01q1", "02q0", "02q1", "0f0", "0q0");
+        let alphabet = alphabet!('a', 'b');
+        let q0 = "0q0".to_string();
+        let f = stateset!("0f0");
+        let delta = delta!(
+            ("01q0", 'a', "01q1"),
+            ("01q1", 'λ', "0f0"),
+            ("02q0", 'b', "02q1"),
+            ("02q1", 'λ', "0f0"),
+            ("0q0", 'λ', "01q0"),
+            ("0q0", 'λ', "02q0")
         );
 
         let m = M::new(k, alphabet, q0, f, delta);

@@ -6,7 +6,7 @@ use std::collections::{BTreeSet};
 
 pub fn stateset_name(states: &StateSet) -> String {
     let states_vec: Vec<State> = states.iter().cloned().collect();
-    states_vec.join("")
+    states_vec.join("-")
 }
 
 
@@ -65,20 +65,23 @@ pub fn afndl_to_afd(m: &M) -> M {
     while k != marked {
         //t: StateSet
         for t in k.clone().difference(&marked.clone()) {
+            println!("t = {:?}", t);
             marked.insert(t.clone());
             for a in m.alphabet.iter() {
                 let u = mover(&t, *a, &m);
                 if u.is_empty() { continue; }
-                //println!("u {:?}", u);
 
-                let intersection: StateSet = u.intersection(&m.f).cloned().collect();
-                if !intersection.is_empty() {
-                    f.insert(stateset_name(&u));
-                }
 
                 k.insert(u.clone());
                 delta.insert( (stateset_name(&t), *a, stateset_name(&u)) );
             }
+        }
+    }
+
+    for t in &k {
+        let intersection: StateSet = t.intersection(&m.f).cloned().collect();
+        if !intersection.is_empty() {
+            f.insert(stateset_name(&t));
         }
     }
 
@@ -135,7 +138,7 @@ mod tests {
     #[test]
     fn afndl_to_afd_test() {
         use super::{afndl_to_afd};
-        use automata::{M, to_delta_inner};
+        use automata::{M};
         let k = stateset!("q0", "q1", "q2", "q3", "q4", "q5");
         let alphabet = alphabet!('a', 'b');
         let q0 = "q0".to_string();
@@ -153,25 +156,70 @@ mod tests {
         let afndl = M::new(k, alphabet, q0, f, delta);
 
         let afd: M = afndl_to_afd(&afndl);
-
-        assert_eq!(afd.k, stateset!("q0", "q1q2", "q2q3q4", "q2q3", "q5"));
-        assert_eq!(afd.alphabet, afndl.alphabet);
-        assert_eq!(afd.f, stateset!("q5") );
-        assert_eq!(afd.q0, "q0");
-
-
-        let delta_expected = delta!(
-            ("q0",     'a', "q1q2"  ),
-            ("q1q2",   'a', "q2q3q4"),
-            ("q1q2",   'b', "q2q3"  ),
-            ("q2q3q4", 'a', "q2q3q4"),
-            ("q2q3q4", 'b', "q5"    ),
-            ("q2q3",   'a', "q2q3q4"),
-            ("q0",     'a', "q1q2"  )
+        let m_expected =M::new(
+            stateset!("q0", "q1-q2", "q2-q3-q4", "q2-q3", "q5"),
+            afndl.alphabet.clone(),
+            "q0".to_string(),
+            stateset!("q5"),
+            delta!(
+                ("q0",       'a', "q1-q2"  ),
+                ("q1-q2",    'a', "q2-q3-q4"),
+                ("q1-q2",    'b', "q2-q3"  ),
+                ("q2-q3-q4", 'a', "q2-q3-q4"),
+                ("q2-q3-q4", 'b', "q5"    ),
+                ("q2-q3",    'a', "q2-q3-q4"),
+                ("q0",       'a', "q1-q2"  )
+            )
         );
 
-        assert_eq!(afd.delta, to_delta_inner(delta_expected));
+        assert_eq!(afd, m_expected);
     }
+
+
+
+    // Special test case for automatas that the initial state is alce final  (i.e. star automatas)
+    #[test]
+    fn afndl_to_afd_test_case_1() {
+        use super::{afndl_to_afd};
+        use automata::{M};
+
+        let afndl = M::new(
+            stateset!("01q0", "01q1", "0f0", "0q0"),
+            alphabet!('a'),
+            "0q0".to_string(),
+            stateset!("0f0"),
+            delta!(
+                ("01q0", 'a', "01q1"),
+                ("01q1", 'λ', "01q0"),
+                ("01q1", 'λ', "0f0"),
+                ("0q0",  'λ', "01q0"),
+                ("0q0",  'λ', "0f0")
+            )
+        );
+
+
+        let afd: M = afndl_to_afd(&afndl);
+
+        let m_expected = M::new(
+            stateset!("01q0-01q1-0f0", "01q0-0f0-0q0"),
+            afndl.alphabet.clone(),
+            "01q0-0f0-0q0".to_string(),
+            stateset!("01q0-01q1-0f0", "01q0-0f0-0q0"),
+            delta!(
+                ("01q0-01q1-0f0", 'a', "01q0-01q1-0f0"  ),
+                ("01q0-0f0-0q0", 'a', "01q0-01q1-0f0"  )
+            )
+        );
+
+        {
+            use automata::print_automata;
+            print_automata(&afndl);
+            print_automata(&afd);
+            print_automata(&m_expected);
+        }
+        assert_eq!(afd, m_expected);
+    }
+
 }
 
 

@@ -61,6 +61,15 @@ pub fn print_delta(delta: &DeltaMap) {
     println!("");
 }
 
+pub fn print_automata(m: &M) {
+    println!("AUTOMATA");
+    println!("K:  {:?}", m.k);
+    println!("q0: {:?}", m.q0);
+    println!("f:  {:?}", m.f);
+    println!("a:  {:?}", m.alphabet);
+    print_delta(&m.delta);
+
+}
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq)]
