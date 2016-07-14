@@ -1,12 +1,14 @@
 use std::collections::{BTreeSet, BTreeMap};
 use std::result;
 
+// TODO: move to a common module
 pub type State = String;
 pub type StateSet = BTreeSet<State>;
 pub type Delta = BTreeSet<(State, char, State)>;
 pub type DeltaValue = BTreeMap<char, StateSet>;
 pub type DeltaMap = BTreeMap<State, DeltaValue>;
-pub type Alphabet = BTreeSet<char>;
+pub type Char = char;
+pub type Alphabet = BTreeSet<Char>;
 pub type Result = result::Result<(), ()>;
 
 
@@ -76,7 +78,7 @@ pub fn print_automata(m: &M) {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct M {
     pub k: StateSet,
-    pub alphabet: BTreeSet<char>,
+    pub alphabet: Alphabet,
     pub q0: State,
     pub f: StateSet,
     pub delta: DeltaMap,

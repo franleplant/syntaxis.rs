@@ -66,6 +66,7 @@ macro_rules! delta {
 // Grammar
 
 #[macro_export]
+//TODO: call alphabet here
 macro_rules! charset {
     () => {
         {
