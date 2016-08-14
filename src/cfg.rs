@@ -28,21 +28,26 @@ struct CFG {
     s: NonTerminal,
 }
 
+
+// TODO:
+// - handy function to print trees!
+// - handy function to go from TNT -> Char
+// - handy function to go from Derivation -> String
+
 impl CFG {
-    pub fn new<T: Into<String>>(vn: NonTerminalSet, vt: TerminalSet, p: Productions<T>, s: NonTerminal) -> CFG {
+    pub fn new<T: Into<String> + fmt::Debug>(vn: NonTerminalSet, vt: TerminalSet, p: Productions<T>, s: NonTerminal) -> CFG {
         let mut p_map: ProductionsMap = BTreeMap::new();
 
-        // TODO: this assumes terminals and non terminals can never have the same 
-        // letter, but doesnot check it
-        // TODO: check if vn and vt are effectively disjoint
+        if !vn.is_disjoint(&vt) {
+            panic!("VN and VT must be disjoint.\nVN: {:?} \nVT: {:?}", vn, vt);
+        }
+
         for (nt, der_str) in p {
-            let mut dervec: DerivationVec = {
-                if let Some(dervec) = p_map.get(&nt) {
-                    dervec.clone()
-                } else {
-                    vec!()
-                }
-            };
+            if !vn.contains(&nt) {
+                panic!("NonTerminal in production rule does not belong to VN {:?} -> {:?} \n {:?}", nt, der_str, vn);
+            }
+
+            let dervec = p_map.entry(nt).or_insert(vec!());
 
             let mut der: Derivation = vec!();
 
@@ -53,9 +58,7 @@ impl CFG {
             }
 
             for c in der_string.chars() {
-                println!("c {:?}", c);
                 if vn.contains(&c) {
-                    println!("vn {:?}", c);
                     der.push( TNT::NT(c.clone()) );
                     continue
                 }
@@ -65,11 +68,10 @@ impl CFG {
                     continue
                 }
 
-                panic!("Char in derivation does not belong to VN or VT {:?}", c);
+                panic!("Char in derivation {:?} -> {:?} does not belong to VN or VT {:?}", nt, der_string, c);
             }
 
             dervec.push(der);
-            p_map.insert(nt.clone(), dervec);
         }
 
         CFG {
@@ -78,6 +80,11 @@ impl CFG {
             p: p_map,
             s: s,
         }
+    }
+
+    pub fn get_nt_derivations(&self, nt: &NonTerminal) -> DerivationVec {
+        //TODO: optimize the case where the nt is not found
+        self.p.get(nt).unwrap().clone()
     }
 }
 
@@ -110,24 +117,43 @@ impl fmt::Display for CFG {
 }
 
 
-// TODO work on the tree impl
-//
-//struct Tree {
-    //root: NonTerminal,
-    //children: Vec<Terminal U NonTerminal U Lambda U Tree?>
-//}
+#[derive(Debug, Clone)]
+struct TNode {
+    val: TNT,
+    children: Vec<TNode>
+}
 
-// 2nd iteration of tree
-//struct Node {
-    //val: NonTerminal or Terminal or Lambda,
-    //children: Option<Node>
-//}
+impl TNode {
+    pub fn new(val: TNT, children: Vec<TNode>) -> TNode {
+        TNode {
+            val: val,
+            children: children,
+        }
+    }
 
-//fn tree(cfg: CFG, nt: NonTerminal) -> Tree {
-    //TODO
-    //Creates a single level derivation tree for the given nonterminal
-    //in the given cfg
-//}
+}
+
+impl fmt::Display for TNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+// Need to create a single derivation tree for... a single production rule like this
+// A -> (A)
+//TODO
+//Creates a single level derivation tree for the given nonterminal
+//in the given cfg
+fn tree(nt: &NonTerminal, der: &Derivation) -> TNode {
+    let mut children: Vec<TNode> = vec!();
+    for e in der {
+        let node = TNode::new(e.clone(), vec!());
+        children.push(node);
+    }
+    // TODO: check if the nt is effectively a nonterminal or not
+    let root = TNode::new(TNT::NT(nt.clone()), children);
+    root
+}
 
 
 
@@ -135,7 +161,6 @@ impl fmt::Display for CFG {
 mod tests {
     #[test]
     fn cfg_new_test() {
-
         use super::{CFG, NonTerminalSet, TerminalSet, NonTerminal, Productions};
 
         let vn: NonTerminalSet = charset!('S');
@@ -146,7 +171,16 @@ mod tests {
             ('S', "a" )
         );
 
-        let g = CFG::new(vt, vn, p, s);
+        let g = CFG::new(vn, vt, p, s);
         println!("Resulted grammar {}", g);
+    }
+
+    #[test]
+    fn tree_test() {
+        use super::{TNT, tree};
+
+        let der = vec!( TNT::T('('), TNT::NT('S'), TNT::T(')') );
+        let t = tree(&'S', &der);
+        println!("Resulted tree {}", t);
     }
 }
