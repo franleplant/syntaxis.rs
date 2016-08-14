@@ -29,11 +29,6 @@ struct CFG {
 }
 
 
-// TODO:
-// - handy function to print trees!
-// - handy function to go from TNT -> Char
-// - handy function to go from Derivation -> String
-
 impl CFG {
     pub fn new<T: Into<String> + fmt::Debug>(vn: NonTerminalSet, vt: TerminalSet, p: Productions<T>, s: NonTerminal) -> CFG {
         let mut p_map: ProductionsMap = BTreeMap::new();
@@ -82,10 +77,10 @@ impl CFG {
         }
     }
 
-    pub fn get_nt_derivations(&self, nt: &NonTerminal) -> DerivationVec {
-        //TODO: optimize the case where the nt is not found
-        self.p.get(nt).unwrap().clone()
-    }
+    //pub fn get_nt_derivations(&self, nt: &NonTerminal) -> DerivationVec {
+        ////TODO: optimize the case where the nt is not found
+        //self.p.get(nt).unwrap().clone()
+    //}
 }
 
 
@@ -100,14 +95,7 @@ impl fmt::Display for CFG {
         write!(f, "Productions: \n").unwrap();
         for (nt, dervec) in &self.p {
             for der in dervec {
-                let mut der_string = String::new();
-                for e in der {
-                    match *e {
-                        TNT::T(t) => der_string.push(t),
-                        TNT::NT(nt) => der_string.push(nt),
-                        _ => {},
-                    }
-                }
+                let der_string = derivation_to_string(der);
                 write!(f, "{:?} -> {:?} \n", nt, der_string).unwrap();
             }
         }
@@ -133,17 +121,63 @@ impl TNode {
 
 }
 
+
 impl fmt::Display for TNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        let width = 90;
+        let cwidth = width / self.children.len();
+        write!(f, "\n").unwrap();
+        write!(f, "{:^width$}", self.val.to_string(), width = width).unwrap();
+        write!(f, "\n").unwrap();
+
+        write!(f, "\n").unwrap();
+        write!(f, "\n").unwrap();
+
+
+        for c in &self.children {
+            write!(f, "{:^width$}", c.val.to_string(), width = cwidth).unwrap();
+        }
+
+        write!(f, "\n")
     }
 }
 
-// Need to create a single derivation tree for... a single production rule like this
-// A -> (A)
-//TODO
-//Creates a single level derivation tree for the given nonterminal
-//in the given cfg
+
+
+impl TNT {
+    fn to_char(&self) -> char {
+        match *self {
+            TNT::T(t) => t,
+            TNT::NT(nt) => nt,
+            // TODO: proper lambda symbol
+            TNT::Lambda =>  '&',
+        }
+    }
+
+    fn to_string(&self) -> String {
+        match *self {
+            TNT::T(t) => format!("T('{}')", t),
+            TNT::NT(nt) => format!("NT('{}')", nt),
+            TNT::Lambda =>  "Lambda".to_string(),
+        }
+    }
+}
+
+
+fn derivation_to_string(der: &Derivation) -> String {
+    let mut der_string = String::new();
+    for e in der {
+        match *e {
+            TNT::T(t) => der_string.push(t),
+            TNT::NT(nt) => der_string.push(nt),
+            _ => {},
+        }
+    }
+
+    der_string
+}
+
+//Creates a single level derivation tree for the given Derivation
 fn tree(nt: &NonTerminal, der: &Derivation) -> TNode {
     let mut children: Vec<TNode> = vec!();
     for e in der {
