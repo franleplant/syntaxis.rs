@@ -3,6 +3,7 @@ pub use self::automata_operators::*;
 pub use self::automata_min::*;
 pub use self::grammar::*;
 pub use self::regexp::*;
+pub use self::cfg::*;
 
 #[macro_use]
 mod macros;
@@ -11,3 +12,4 @@ mod automata_operators;
 mod automata_min;
 mod grammar;
 mod regexp;
+mod cfg;
