@@ -1,4 +1,4 @@
-
+use std::cell::Cell;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
@@ -27,101 +27,106 @@ fn lex(s: String) -> Vec<Token> {
     tokens
 }
 
-fn re(i: usize, tokens: &Vec<Token>) -> (usize, bool) {
-    println!("Re {:?}", tokens[i]);
 
-    let token = tokens.get(i).expect("Re panic");
-    let cat = token.category.as_str();
 
-    if cat == "EOF" {
-        return (i, true);
-    }
+#[derive(Debug)]
+pub struct Parser {
+    index: Cell<usize>,
+    src: String,
+    tokens: Vec<Token>
+}
 
-    if cat == "Lit" {
-        return ops(i + 1, tokens);
-    }
-
-    if cat == "(" {
-        let (i, res) = re(i + 1, tokens);
-        if res {
-            let token = tokens.get(i).expect("Re panic");
-            if token.category == ")" {
-                return ops(i + 1, tokens);
-            }
+impl Parser {
+    fn new(src: String) -> Parser {
+        let tokens = lex(src.clone());
+        Parser {
+            index: Cell::new(0),
+            src: src,
+            tokens: tokens,
         }
     }
 
-    return (i, false);
-}
 
-
-fn ops(i: usize, tokens: &Vec<Token>) -> (usize, bool) {
-    println!("Ops {:?}", tokens[i]);
-
-    let token = tokens.get(i).expect("Ops panic");
-
-    match token.category.as_str() {
-        "|" => {
-            return re(i + 1, tokens);
-        },
-        "*" | "+" => {
-            return (i + 1, true);
-        },
-
-        "Lit" | "(" => {
-            return re(i + 1, tokens);
-        },
-
-        ")" => {
-            return (i, true);
-        },
-
-
-        "EOF" => {
-            return (i, true);
-        },
-
-        _ => {},
+    fn next(&self) {
+        self.index.set(self.index.get() + 1);
     }
 
-    return (i, false);
+    //fn print(&self) {
+        
+    //}
+
+    fn parse(&self) -> bool {
+        return self.re();
+    }
+
+    fn re(&self) -> bool {
+        let token = self.tokens.get(self.index.get()).expect("Re panic");
+
+        println!("Re {:?}", token);
+
+        match token.category.as_str() {
+            "Lit" => {
+                self.next();
+                return self.ops();
+            },
+
+            "(" => {
+                self.next();
+                if self.re() {
+                    let token = self.tokens.get(self.index.get()).expect("Re panic");
+                    if token.category == ")" {
+                        self.next();
+                        return self.ops();
+                    }
+                }
+
+                return false;
+            },
+
+            "EOF" => return true,
+
+            _ => return false,
+        }
+    }
+
+    fn ops(&self) -> bool {
+        let token = self.tokens.get(self.index.get()).expect("Ops panic");
+
+        println!("Ops {:?}", token);
+
+        match token.category.as_str() {
+            // First
+            "|" => {
+                self.next();
+                return self.re();
+            },
+            // First
+            "*" | "+" => {
+                self.next();
+                return true;
+            },
+
+            // Follow
+            "Lit" | "(" => {
+                return self.re();
+            },
+
+            // Follow
+            ")" => {
+                return true;
+            },
+
+            // Follow
+            "EOF" => {
+                return true;
+            },
+
+            _ => return false,
+        }
+    }
+
 }
 
-//#[derive(Debug)]
-//pub struct Parser {
-    //index: usize,
-    //src: String,
-    //tokens: Vec<Token>
-//}
-
-//impl Parser {
-    //fn new(src: String) -> Parser {
-        //let tokens = lex(src.clone());
-        //Parser {
-            //index: 0,
-            //src: src,
-            //tokens: tokens,
-        //}
-    //}
-
-
-    //fn next(&mut self) {
-        //self.index += 1;
-    //}
-
-    //fn parse(self) -> bool {
-        //let (res, _) = re(self);
-        //return res
-    //}
-//}
-
-pub fn parse(src: String) -> bool {
-    let tokens = lex(src.clone());
-    let i = 0;
-
-    let (_, res) = re(i, &tokens);
-    return res;
-}
 
 #[cfg(test)]
 mod tests {
@@ -145,7 +150,31 @@ mod tests {
                 .collect();
             assert_eq!(lex(c.to_string()), expected);
         }
+    }
 
 
+    #[test]
+    fn parse_test() {
+
+        let cases = vec![
+            "a",
+            "(a)",
+            "(aa)",
+            "a|(cde)*a+",
+            "((((aaa))))",
+        ];
+
+        let expect = vec![
+            true,
+            true,
+            true,
+            true,
+        ];
+
+        for (c, e) in cases.iter().zip(expect.iter()) {
+            println!("\nCase {:?}\n", c);
+            let p = Parser::new(c.to_string());
+            assert_eq!(p.parse(), *e, "In {:?}", c);
+        }
     }
 }
