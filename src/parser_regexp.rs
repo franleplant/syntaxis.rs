@@ -86,14 +86,27 @@ impl Node {
         }
     }
 
-    fn postorder_walk(x: Rc<RefCell<Node>>) {
+    fn postorder_walk(x: Rc<RefCell<Node>>) -> Option<String> {
         let x = x.borrow();
-        for c in &x.children {
-            //println!("{:?}", c);
-            Node::postorder_walk(c.clone());
+
+        if let NodeCat::T(ref token) = x.category {
+            println!("{:?}", token);
+            return Some(token.category.clone());
         }
 
-        println!("{:?}", x.category);
+        let to_concat: Vec<String> = x.children
+            .iter()
+            .map(|c| Node::postorder_walk(c.clone()))
+            .filter(|x| x.is_some())
+            .map(|x| x.unwrap())
+            .collect();
+
+
+        if to_concat.len() == 0 {
+            return None;
+        }
+
+        Some(to_concat.join("") + "\n")
     }
 }
 
@@ -440,7 +453,7 @@ mod tests {
             let p = Parser::new(c.to_string());
             p.parse();
             println!("WALK");
-            Node::postorder_walk(p.tree.clone());
+            println!("{:?}",Node::postorder_walk(p.tree.clone()));
             println!("TREE");
             p.print();
         }
