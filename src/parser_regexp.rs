@@ -31,7 +31,7 @@ fn lex(s: String) -> Vec<Token> {
 
 #[derive(Debug)]
 pub enum NodeCat {
-    T(String),
+    T(Token),
     NT(String),
 }
 
@@ -49,9 +49,9 @@ impl Node {
         }))
     }
 
-    fn new_t(val: &'static str) -> Rc<RefCell<Node>> {
+    fn new_t(val: Token) -> Rc<RefCell<Node>> {
         Rc::new(RefCell::new(Node {
-            category: NodeCat::T(val.to_string()),
+            category: NodeCat::T(val),
             children: vec![],
         }))
     }
@@ -84,6 +84,16 @@ impl Node {
         for c in &x.children {
             Node::preorder_walk(c.clone(), level + 1);
         }
+    }
+
+    fn postorder_walk(x: Rc<RefCell<Node>>) {
+        let x = x.borrow();
+        for c in &x.children {
+            //println!("{:?}", c);
+            Node::postorder_walk(c.clone());
+        }
+
+        println!("{:?}", x.category);
     }
 }
 
@@ -136,7 +146,7 @@ impl Parser {
             // Re -> Lit Ops
             "Lit" => {
                 {
-                    let a = Node::new_t("Lit");
+                    let a = Node::new_t(token.clone());
                     let new_focus = Node::new_nt("Ops");
 
                     {
@@ -160,9 +170,9 @@ impl Parser {
                     {
                         let focus = self.focus.borrow();
                         let mut focus = focus.borrow_mut();
-                        focus.children.push(Node::new_t("("));
+                        focus.children.push(Node::new_t(token.clone()));
                         focus.children.push(new_focus.clone());
-                        focus.children.push(Node::new_t(")"));
+                        focus.children.push(Node::new_t(Token { category: ")".to_string(), lexeme: "".to_string()}));
                         focus.children.push(ops_focus.clone());
                     }
 
@@ -200,7 +210,7 @@ impl Parser {
             // First
             "|" => {
                 {
-                    let a = Node::new_t("|");
+                    let a = Node::new_t(token.clone());
                     let new_focus = Node::new_nt("Re");
 
                     {
@@ -219,7 +229,7 @@ impl Parser {
             // First
             "*" => {
                 {
-                    let a = Node::new_t("*");
+                    let a = Node::new_t(token.clone());
                     let new_focus = Node::new_nt("ReFinish");
 
                     {
@@ -238,7 +248,7 @@ impl Parser {
             // First
             "+" => {
                 {
-                    let a = Node::new_t("+");
+                    let a = Node::new_t(token.clone());
                     let new_focus = Node::new_nt("ReFinish");
 
                     {
@@ -275,7 +285,7 @@ impl Parser {
                 {
                     let focus = self.focus.borrow();
                     let mut focus = focus.borrow_mut();
-                    focus.children.push(Node::new_t("Lambda"));
+                    focus.children.push(Node::new_t(Token { category: "Lambda".to_string(), lexeme: "".to_string()}));
                 }
                 return true;
             },
@@ -285,7 +295,7 @@ impl Parser {
                 {
                     let focus = self.focus.borrow();
                     let mut focus = focus.borrow_mut();
-                    focus.children.push(Node::new_t("EOF"));
+                    focus.children.push(Node::new_t(Token { category: "EOF".to_string(), lexeme: "".to_string()}));
                 }
                 return true;
             },
@@ -321,7 +331,7 @@ impl Parser {
                 {
                     let focus = self.focus.borrow();
                     let mut focus = focus.borrow_mut();
-                    focus.children.push(Node::new_t("Lambda"));
+                    focus.children.push(Node::new_t(Token { category: "Lambda".to_string(), lexeme: "".to_string()}));
                 }
                 return true;
             },
@@ -330,7 +340,7 @@ impl Parser {
                 {
                     let focus = self.focus.borrow();
                     let mut focus = focus.borrow_mut();
-                    focus.children.push(Node::new_t("EOF"));
+                    focus.children.push(Node::new_t(Token { category: "EOF".to_string(), lexeme: "".to_string()}));
                 }
                 return true;
             },
@@ -396,6 +406,42 @@ mod tests {
             println!("\nCase {:?}\n", c);
             let p = Parser::new(c.to_string());
             assert_eq!(p.parse(), *e, "In {:?}", c);
+            p.print();
+        }
+    }
+
+    #[test]
+    fn engine_test() {
+
+        let cases = vec![
+            "a",
+            //"(a)",
+            //"(aa)",
+            //"a*b",
+            //"(a*)b",
+            //"(a)*b",
+            //"a|(cde)*a+",
+            //"((((aaa))))",
+        ];
+
+        let expect = vec![
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+        ];
+
+        for (c, e) in cases.iter().zip(expect.iter()) {
+            println!("\nCase {:?}\n", c);
+            let p = Parser::new(c.to_string());
+            p.parse();
+            println!("WALK");
+            Node::postorder_walk(p.tree.clone());
+            println!("TREE");
             p.print();
         }
     }
