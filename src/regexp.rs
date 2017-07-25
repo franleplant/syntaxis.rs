@@ -72,7 +72,7 @@ fn automata_union(m1: &M, m2: &M, prefix: String) -> M {
     M::new(k, alphabet, q0, stateset!(f), delta)
 }
 
-fn automata_intersection(m1: &M, m2: &M, prefix: String) -> M {
+pub fn automata_intersection(m1: &M, m2: &M, prefix: String) -> M {
     let m1_prefix: String = {
         let mut p = prefix.clone();
         p.push_str("1");
@@ -109,7 +109,7 @@ fn automata_intersection(m1: &M, m2: &M, prefix: String) -> M {
     M::new(k, alphabet, q0, stateset!(f), delta)
 }
 
-fn automata_star(m: &M, prefix: String) -> M {
+pub fn automata_star(m: &M, prefix: String) -> M {
     let m_prefix: String = {
         let mut p = prefix.clone();
         p.push_str("1");
@@ -235,6 +235,37 @@ pub fn regexp(s: String) -> M {
     )
 }
 
+
+
+pub fn re_trivial(s: String) -> M {
+    assert!(s.len() <= 1);
+    let chain_v: Vec<char> = s.chars().collect();
+
+    if chain_v.len() == 0 {
+        let m: M = M::new(
+            stateset!("q0"),
+            alphabet!(),
+            "q0".to_string(),
+            stateset!("q0"),
+            delta!()
+        );
+
+        return m;
+    }
+    // len = 1
+
+    let m: M = M::new(
+        stateset!("q0", "q1"),
+        alphabet!(chain_v[0]),
+        "q0".to_string(),
+        stateset!("q1"),
+        delta!(("q0", chain_v[0], "q1"))
+    );
+
+    return m;
+
+}
+
 #[cfg(test)]
 mod tests {
     use automata::M;
@@ -346,6 +377,52 @@ mod tests {
             use automata::print_delta;
             print_delta(&m.delta);
             print_delta(&m_expected.delta);
+        }
+
+        assert_eq!(m, m_expected)
+    }
+
+    // TODO The intersection is broken :(
+    #[test]
+    fn intersection_test_2() {
+        use super::automata_intersection;
+
+        let m1 = M::new(
+            stateset!("q0"),
+            alphabet!('a'),
+            "q0".to_string(),
+            stateset!("q0"),
+            delta!(("q0", 'a', "q0"))
+        );
+
+        let m2 = M::new(
+            stateset!("q0", "q1"),
+            alphabet!('b'),
+            "q0".to_string(),
+            stateset!("q1"),
+            delta!(("q0", 'b', "q1"))
+        );
+
+        let m_expected = M::new(
+            stateset!("01q0", "01q1", "02q0", "02q1"),
+            alphabet!('a', 'b'),
+            "01q0".to_string(),
+            stateset!("02q1"),
+            delta!(
+                ("01q0", 'a', "01q1"),
+                ("01q1", 'λ', "02q0"),
+                ("02q0", 'b', "02q1")
+            )
+        );
+
+        let m = automata_intersection(&m1, &m2, "0".to_string());
+
+        {
+            use automata::print_automata;
+            use automata_min::pretify_automata;
+            println!("FUCK YOU");
+            let m = pretify_automata(&m);
+            print_automata(&m);
         }
 
         assert_eq!(m, m_expected)

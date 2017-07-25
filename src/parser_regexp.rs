@@ -1,5 +1,9 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
+use automata::{M, print_automata};
+use regexp::{re_trivial, automata_intersection, automata_star};
+use automata_min::{minify, pretify_automata};
+use automata_operators::{afndl_to_afd};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
@@ -86,27 +90,124 @@ impl Node {
         }
     }
 
-    fn postorder_walk(x: Rc<RefCell<Node>>) -> Option<String> {
+    fn postorder_walk(x: Rc<RefCell<Node>>) -> Option<M> {
         let x = x.borrow();
 
         if let NodeCat::T(ref token) = x.category {
             println!("{:?}", token);
-            return Some(token.category.clone());
+
+            match token.category.as_str() {
+                "EOF" | "Lambda" | "(" | ")" | "*" => return None,
+                "Lit" => {
+                    let m  = re_trivial(token.lexeme.clone());
+                    {
+                        println!("INTERMEDIATE Trivial\n++++++++++++++++");
+                        let m = pretify_automata(&m);
+                        print_automata(&m);
+                    }
+
+                    return Some(m);
+                },
+                _ => panic!("Don't know how to handle this yet")
+            }
         }
 
-        let to_concat: Vec<String> = x.children
-            .iter()
-            .map(|c| Node::postorder_walk(c.clone()))
-            .filter(|x| x.is_some())
-            .map(|x| x.unwrap())
-            .collect();
+        let mut m = None;
+        for c in &x.children {
 
+            // Ops -> * Rel
+            if let NodeCat::NT(ref cat) = c.borrow().category {
+                if cat.as_str() == "Ops" {
+                    let c = c.borrow();
+                    let first_child = c.children[0].borrow();
+                    if let NodeCat::T(ref token) = first_child.category {
+                        if token.category.as_str() == "*" {
+                            if m == None {
+                                panic!("Something went wrong while expanding Lit *");
+                            }
 
-        if to_concat.len() == 0 {
-            return None;
+                            m = Some(automata_star(&m.unwrap(), "*".to_string()));
+                            {
+                                println!("INTERMEDIATE CASE star \n++++++++++++++++");
+                                let m = pretify_automata(&m.clone().unwrap());
+                                print_automata(&m);
+                            }
+                            m = Some(afndl_to_afd(&m.unwrap()));
+                            m = Some(minify(&m.unwrap()));
+                            {
+                                println!("INTERMEDIATE CASE star MIN\n++++++++++++++++");
+                                let m = pretify_automata(&m.clone().unwrap());
+                                print_automata(&m);
+                            }
+                        }
+                    }
+                }
+            }
+
+            let next_m = Node::postorder_walk(c.clone());
+            if next_m == None {
+                continue
+            }
+
+            if m == None {
+                m = next_m;
+                continue
+            }
+
+            m = Some(automata_intersection(&m.unwrap(), &next_m.unwrap(), "-".to_string()));
+            {
+                println!("INTERMEDIATE CASE concat\n++++++++++++++++");
+                let m = pretify_automata(&m.clone().unwrap());
+                print_automata(&m);
+            }
+            m = Some(afndl_to_afd(&m.unwrap()));
+            m = Some(minify(&m.unwrap()));
+            {
+                println!("INTERMEDIATE CASE concat min\n++++++++++++++++");
+                let m = pretify_automata(&m.clone().unwrap());
+                print_automata(&m);
+            }
+
+            //match c.category {
+                //NodeCat::T(ref token) => {
+                
+                //},
+                //NodeCat::NT(ref nt) => {
+                
+                //}
+            //}
+            //if let NodeCat::T(ref token) = x.category {
+                //if token.category.as_str() == "*" {
+                
+                //}
+            //}
         }
 
-        Some(to_concat.join("") + "\n")
+        //TODO better interpretation of the tree and probably better grammar
+        //let to_concat: Vec<M> = x.children
+            //.iter()
+            //.map(|c| Node::postorder_walk(c.clone()))
+            //.filter(|x| x.is_some())
+            //.map(|x| x.unwrap())
+            //.collect();
+
+
+        //if to_concat.len() == 0 {
+            //return None;
+        //}
+
+        return m
+
+        //let mut accumulated_m = to_concat[0].clone();
+        //for m in to_concat.iter().skip(1) {
+            //accumulated_m = automata_intersection(&accumulated_m, &m, "-".to_string());
+        //}
+
+        //let m = afndl_to_afd(&accumulated_m);
+        //let m = minify(&m);
+
+
+        //Some(m)
     }
 }
 
@@ -428,34 +529,47 @@ mod tests {
 
         let cases = vec![
             "a",
-            //"(a)",
-            //"(aa)",
-            //"a*b",
-            //"(a*)b",
-            //"(a)*b",
-            //"a|(cde)*a+",
-            //"((((aaa))))",
+            "a*",
+            "a*b",
+            "(a)",
+            "(aa)",
+            "(a*)b",
+            "(a)*b",
+            "a|(cde)*a+",
+            "((((aaa))))",
         ];
 
         let expect = vec![
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
+            (vec!["a"], vec!["ab"]),
+            (vec!["", "a", "aaa"], vec!["ab"]),
+            (vec!["b", "aab", "aaaaaaab"], vec!["a", "aaa"]),
+            //(vec!["a"], vec!["ab"]),
+            //(vec!["aa"], vec!["a"]),
         ];
 
         for (c, e) in cases.iter().zip(expect.iter()) {
-            println!("\nCase {:?}\n", c);
+            println!("\nCase {:?}\n=========\n", c);
             let p = Parser::new(c.to_string());
             p.parse();
             println!("WALK");
-            println!("{:?}",Node::postorder_walk(p.tree.clone()));
+            let mut m = Node::postorder_walk(p.tree.clone()).unwrap();
             println!("TREE");
             p.print();
+
+            println!("AUTOMATA\n");
+            {
+                let m = pretify_automata(&m);
+                print_automata(&m);
+            }
+
+            let &(ref oks, ref errs) = e;
+            for ok in oks {
+                assert!(m.check_string(ok).is_ok());
+            }
+
+            for err in errs {
+                assert!(m.check_string(err).is_err());
+            }
         }
     }
 }
