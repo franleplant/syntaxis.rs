@@ -183,23 +183,23 @@ fn apply_quotient(m: &M, quotient: &Quotient) -> M {
 fn remove_unreachable_states(m: &M) -> M {
     {
         use automata::print_automata;
-        println!("Removing unreachable states: received automata");
+        //println!("Removing unreachable states: received automata");
         print_automata(&m);
     }
     let relation_matrix: RelationMatrix = get_relation_matrix(&m);
     {
-        println!("relationship matrix");
-        println!("{:?}", relation_matrix);
+        //println!("relationship matrix");
+        //println!("{:?}", relation_matrix);
     }
     let r_star: RelationMatrix = warshall(&relation_matrix);
     {
-        println!("relationship matrix star");
-        println!("{:?}", r_star);
+        //println!("relationship matrix star");
+        //println!("{:?}", r_star);
     }
     let reachable_states: StateSet = get_reachable_states(&m, &r_star);
     {
-        println!("reachable states");
-        println!("{:?}", reachable_states);
+        //println!("reachable states");
+        //println!("{:?}", reachable_states);
     }
     let m: M = remove_unreachable_states_with_params(&m, reachable_states);
 
@@ -209,22 +209,22 @@ fn remove_unreachable_states(m: &M) -> M {
 // TODO: conditional compilation on the prints
 pub fn minify(m: &M) -> M {
     {
-        use automata::print_automata;
-        println!("MINIFICATION: received automata");
-        print_automata(&m);
+        //use automata::print_automata;
+        //println!("MINIFICATION: received automata");
+        //print_automata(&m);
     }
     let m: M = remove_unreachable_states(m);
     {
-        use automata::print_automata;
-        println!("MINIFICATION: automata without unreachable states");
-        print_automata(&m);
+        //use automata::print_automata;
+        //println!("MINIFICATION: automata without unreachable states");
+        //print_automata(&m);
     }
     let quotient: Quotient = get_quotient(&m);
     let m: M = apply_quotient(&m, &quotient);
     {
-        use automata::print_automata;
-        println!("MINIFICATION: min automata");
-        print_automata(&m);
+        //use automata::print_automata;
+        //println!("MINIFICATION: min automata");
+        //print_automata(&m);
     }
 
     m
