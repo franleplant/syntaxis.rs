@@ -26,7 +26,7 @@ fn prefix_automata(prefix: &String, m: &M) -> M {
     M::new(k, m.alphabet.clone(), q0, f, delta)
 }
 
-fn automata_union(m1: &M, m2: &M, prefix: String) -> M {
+pub fn automata_union(m1: &M, m2: &M, prefix: String) -> M {
     let m1_prefix: String = {
         let mut p = prefix.clone();
         p.push_str("1");
@@ -97,11 +97,11 @@ pub fn automata_intersection(m1: &M, m2: &M, prefix: String) -> M {
     let mut delta: Delta = delta!((f1.clone(), 'λ', prefixed_m2.q0.clone()));
 
     for (s, a, ns) in to_delta(&prefixed_m1) {
-        if prefixed_m1.f.contains(&s) { continue };
+        //if prefixed_m1.f.contains(&s) { continue };
         delta.insert( (s.clone(), a.clone(), ns.clone()) );
     }
     for (s, a, ns) in to_delta(&prefixed_m2) {
-        if prefixed_m2.f.contains(&s) { continue };
+        //if prefixed_m2.f.contains(&s) { continue };
         delta.insert( (s.clone(), a.clone(), ns.clone()) );
     }
 
@@ -382,7 +382,6 @@ mod tests {
         assert_eq!(m, m_expected)
     }
 
-    // TODO The intersection is broken :(
     #[test]
     fn intersection_test_2() {
         use super::automata_intersection;
@@ -404,22 +403,23 @@ mod tests {
         );
 
         let m_expected = M::new(
-            stateset!("01q0", "01q1", "02q0", "02q1"),
+            stateset!("Q0", "Q1", "Q2"),
             alphabet!('a', 'b'),
-            "01q0".to_string(),
-            stateset!("02q1"),
+            "Q0".to_string(),
+            stateset!("Q2"),
             delta!(
-                ("01q0", 'a', "01q1"),
-                ("01q1", 'λ', "02q0"),
-                ("02q0", 'b', "02q1")
+                ("Q0", 'a', "Q0"),
+                ("Q0", 'λ', "Q1"),
+                ("Q1", 'b', "Q2")
             )
         );
 
+        use automata::print_automata;
+        use automata_min::pretify_automata;
         let m = automata_intersection(&m1, &m2, "0".to_string());
+        let m = pretify_automata(&m);
 
         {
-            use automata::print_automata;
-            use automata_min::pretify_automata;
             println!("FUCK YOU");
             let m = pretify_automata(&m);
             print_automata(&m);
