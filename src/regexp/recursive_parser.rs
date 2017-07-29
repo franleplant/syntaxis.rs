@@ -303,37 +303,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn lex_test() {
-        let cases = vec![
-            ("a", vec![("Lit", "a"), ("EOF", "")]),
-            ("aa", vec![("Lit", "a"), ("Lit", "a"), ("EOF", "")]),
-            ("a|b|c", vec![("Lit", "a"),
-                            ("|", ""),
-                            ("Lit", "b"),
-                            ("|", ""),
-                            ("Lit", "c"),
-                            ("EOF", "")]),
-            ("(a)", vec![("(", ""), ("Lit", "a"), (")", ""), ("EOF", "")]),
-            ("a(b)", vec![("Lit", "a"), ("(", ""), ("Lit", "b"), (")", ""), ("EOF", "")]),
-            //"(a|b)",
-            //"(a|b)*",
-        ];
-
-        for (c, e) in cases {
-            let expected: Vec<Token> = e.iter()
-                .map(|&(cat, lexeme)| {
-                         Token {
-                             category: cat.to_string(),
-                             lexeme: lexeme.to_string(),
-                         }
-                     })
-                .collect();
-            assert_eq!(lex(c.to_string()), expected);
-        }
-    }
-
-
-    #[test]
     fn parse_test() {
 
         let cases = vec!["a",
