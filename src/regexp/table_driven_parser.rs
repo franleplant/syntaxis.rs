@@ -30,43 +30,39 @@ impl Production {
 }
 
 fn get_productions() -> Vec<Production> {
-    let prods = vec![
-        Production::new("Re", vec!["Lit", "Ops"]),
-        Production::new("Re", vec!["(", "Re", ")", "Ops"]),
+    let prods = vec![Production::new("Re", vec!["Lit", "Ops"]),
+                     Production::new("Re", vec!["(", "Re", ")", "Ops"]),
 
-        Production::new("Ops", vec!["*", "ReL"]),
-        Production::new("Ops", vec!["+", "ReL"]),
-        Production::new("Ops", vec!["|", "Re"]),
-        Production::new("Ops", vec!["Re"]),
-        Production::new("Ops", vec!["Lambda"]),
+                     Production::new("Ops", vec!["*", "ReL"]),
+                     Production::new("Ops", vec!["+", "ReL"]),
+                     Production::new("Ops", vec!["|", "Re"]),
+                     Production::new("Ops", vec!["Re"]),
+                     Production::new("Ops", vec!["Lambda"]),
 
-        Production::new("ReL", vec!["Re"]),
-        Production::new("ReL", vec!["Lambda"]),
-    ];
+                     Production::new("ReL", vec!["Re"]),
+                     Production::new("ReL", vec!["Lambda"])];
 
     prods
 }
 
 fn get_table() -> HashMap<(String, String), usize> {
-    let entries = [
-       (("Re", "Lit"), 0),
-       (("Re", "("), 1),
+    let entries = [(("Re", "Lit"), 0),
+                   (("Re", "("), 1),
 
-       (("Ops", "*"), 2),
-       (("Ops", "+"), 3),
-       (("Ops", "|"), 4),
-       (("Ops", "Lit"), 5),
-       (("Ops", "("), 5),
-       (("Ops", "EOF"), 6),
-       (("Ops", ")"), 6),
-       (("Ops", "Lambda"), 6),
-       
-       (("ReL", "Lit"), 7),
-       (("ReL", "("), 7),
-       (("ReL", "EOF"), 8),
-       (("ReL", ")"), 8),
-       (("ReL", "Lambda"), 8),
-    ];
+                   (("Ops", "*"), 2),
+                   (("Ops", "+"), 3),
+                   (("Ops", "|"), 4),
+                   (("Ops", "Lit"), 5),
+                   (("Ops", "("), 5),
+                   (("Ops", "EOF"), 6),
+                   (("Ops", ")"), 6),
+                   (("Ops", "Lambda"), 6),
+
+                   (("ReL", "Lit"), 7),
+                   (("ReL", "("), 7),
+                   (("ReL", "EOF"), 8),
+                   (("ReL", ")"), 8),
+                   (("ReL", "Lambda"), 8)];
 
     let mut table = HashMap::new();
     for &((non_terminal, token_cat), value) in entries.iter() {
@@ -96,16 +92,7 @@ fn get_table() -> HashMap<(String, String), usize> {
 }
 
 fn is_terminal(s: &String) -> bool {
-    let t = vec![
-        "Lit",
-        "(",
-        ")",
-        "*",
-        "+",
-        "|",
-        "EOF",
-        "Lambda"
-    ];
+    let t = vec!["Lit", "(", ")", "*", "+", "|", "EOF", "Lambda"];
 
     let terminals: HashSet<String> = t.iter().cloned().map(|s| s.to_string()).collect();
     terminals.contains(s)
@@ -119,7 +106,7 @@ struct Parser {
     pub tokens: Vec<Token>,
     pub productions: Vec<Production>,
     pub table: HashMap<(String, String), usize>,
-    stack: Vec<String>
+    stack: Vec<String>,
 }
 
 
@@ -139,8 +126,7 @@ impl Parser {
 
     fn parse_focus(&self) -> Option<String> {
         assert!(self.stack.len() != 0, "OVERFLOW {:?}", self);
-        self.stack.get(self.stack.len() - 1)
-            .map(|s| s.clone())
+        self.stack.get(self.stack.len() - 1).map(|s| s.clone())
     }
 
     pub fn parse(&mut self) -> bool {
@@ -148,8 +134,10 @@ impl Parser {
             let ref token = self.tokens[self.index];
             let parse_focus = self.parse_focus().expect("Something went wrong");
 
-            println!("pfocus {:?} {:?} stack {:?}", parse_focus,
-                    token, self.stack);
+            println!("pfocus {:?} {:?} stack {:?}",
+                     parse_focus,
+                     token,
+                     self.stack);
 
             if parse_focus == "EOF" && token.category == "EOF" {
                 return true;
@@ -158,15 +146,18 @@ impl Parser {
                     self.stack.pop().unwrap();
                     self.index += 1;
                 } else {
-                    panic!(
-                        "ERROR: no entry found in table. parse focus {:?}, token {:?}, stack {:?}",
-                        parse_focus, token, self.stack)
+                    panic!("ERROR: no entry found in table. parse focus {:?}, token {:?}, stack {:?}",
+                           parse_focus,
+                           token,
+                           self.stack)
                 }
             } else {
-                let prod_number = self.table.get(&(parse_focus, token.category.clone()))
+                let prod_number = self.table
+                    .get(&(parse_focus, token.category.clone()))
                     .expect("ERROR: expanding parse_focus");
 
-                let prod = self.productions.get(*prod_number)
+                let prod = self.productions
+                    .get(*prod_number)
                     .expect("ERROR: expanding parse_focus");
 
                 self.stack.pop().unwrap();
