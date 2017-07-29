@@ -15,3 +15,5 @@ mod grammar;
 mod regexp;
 mod cfg;
 mod parser_regexp;
+mod lex;
+mod regexp_tree;
