@@ -250,6 +250,7 @@ impl Parser {
 
         match token.category.as_str() {
             // Re -> Lit Ops
+            // First
             "Lit" => {
                 {
                     let a = Node::new_t(token.clone());
@@ -269,6 +270,7 @@ impl Parser {
             },
 
             // Re -> ( Re ) Ops
+            // First
             "(" => {
                 let new_focus = Node::new_nt("Re");
                 let ops_focus = Node::new_nt("Ops");
@@ -288,6 +290,8 @@ impl Parser {
                 self.next();
                 if self.re() {
                     let token = self.tokens.get(self.index.get()).expect("Re panic");
+                    // Re -> ( Re ) Ops
+                    // follow Re
                     if token.category == ")" {
                         {
                             *self.focus.borrow_mut() = ops_focus;
@@ -370,7 +374,8 @@ impl Parser {
                 return self.re_finish();
             },
 
-            // Follow
+            // Ops -> Re
+            // First
             "Lit" | "(" => {
                 {
                     let new_focus = Node::new_nt("Re");
@@ -417,7 +422,7 @@ impl Parser {
 
         match token.category.as_str() {
             // ReFinish -> Re
-            // Follow
+            // first
             "Lit" | "(" => {
                 {
                     let new_focus = Node::new_nt("Re");
