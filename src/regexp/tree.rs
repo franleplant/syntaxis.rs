@@ -1,11 +1,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+
 use automata::{M, print_automata};
-use regexp::{re_trivial, automata_intersection, automata_union, automata_star};
 use automata_min::{minify, pretify_automata};
 use automata_operators::afndl_to_afd;
-use lex::Token;
-use parser_regexp::Parser;
+
+use regexp::{Token, re_trivial, automata_intersection, automata_union, automata_star};
 
 
 #[derive(Debug)]
@@ -175,6 +175,7 @@ mod tests {
     use super::*;
     #[test]
     fn engine_test() {
+        use regexp::recursive_parser::Parser;
 
         let cases = vec!["a",
                          "(a)",

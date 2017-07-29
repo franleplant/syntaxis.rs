@@ -1,11 +1,10 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
-use lex::{Token, lex};
-use regexp_tree::{Node, tree_to_automata};
+
+use regexp::{Token, Node, lex, tree_to_automata};
 
 
-
-pub fn re(search: String, into: &'static str) -> Result<(), ()> {
+pub fn re1(search: String, into: &'static str) -> Result<(), ()> {
     let p = Parser::new(search);
     p.parse();
     let mut m = tree_to_automata(p.tree.clone()).unwrap();
@@ -355,13 +354,4 @@ mod tests {
             p.print();
         }
     }
-
-
-    #[test]
-    fn engine_hl_test() {
-        assert!(re("hola".to_string(), "hola").is_ok());
-        assert!(re("hola+".to_string(), "holaaaaaa").is_ok());
-        assert!(re("(ho)+la+".to_string(), "hoholaaaaaa").is_ok());
-    }
-
 }
