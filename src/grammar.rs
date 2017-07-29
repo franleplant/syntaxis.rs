@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet};
+use std::collections::BTreeSet;
 
 pub type Terminal = char;
 pub type TerminalSet = BTreeSet<Terminal>;
@@ -19,12 +19,16 @@ pub struct GR {
 }
 
 impl GR {
-    pub fn new(vt: TerminalSet, vn: NonTerminalSet, productions: RegularProductions, q0: Terminal) -> GR {
+    pub fn new(vt: TerminalSet,
+               vn: NonTerminalSet,
+               productions: RegularProductions,
+               q0: Terminal)
+               -> GR {
         GR {
             q0: q0,
             vt: vt,
             vn: vn,
-            productions: productions
+            productions: productions,
         }
     }
 }
@@ -53,15 +57,17 @@ pub fn gr_to_afndl(gr: &GR) -> M {
         match chain.len() {
             1 => {
                 let c = chain[0];
-                delta.insert( (vn.to_string(), c, f.clone()) );
-            },
+                delta.insert((vn.to_string(), c, f.clone()));
+            }
             2 => {
                 let c = chain[0];
                 let ns = chain[1];
-                delta.insert( (vn.to_string(), c, ns.to_string()) );
-            },
+                delta.insert((vn.to_string(), c, ns.to_string()));
+            }
             _ => {
-                println!("NOT A REGULAR GRAMAR. Error in production {} -> {:?}", vn, chain);
+                println!("NOT A REGULAR GRAMAR. Error in production {} -> {:?}",
+                         vn,
+                         chain);
                 panic!("NOT A REGULAR GRAMMAR")
             }
         }
@@ -80,10 +86,7 @@ mod tests {
         let vn: NonTerminalSet = charset!('S');
         let vt: TerminalSet = charset!('a');
         let q0: NonTerminal = 'S';
-        let productions: RegularProductions = r_productions!(
-            ('S', "aS"),
-            ('S', "a")
-        );
+        let productions: RegularProductions = r_productions!(('S', "aS"), ('S', "a"));
 
         let gr = GR::new(vt, vn, productions, q0);
         println!("Resulted grammar {:?}", gr);
@@ -97,18 +100,12 @@ mod tests {
         let vn: NonTerminalSet = charset!('S');
         let vt: TerminalSet = charset!('a');
         let q0: NonTerminal = 'S';
-        let productions: RegularProductions = r_productions!(
-            ('S', "aS"),
-            ('S', "a")
-        );
+        let productions: RegularProductions = r_productions!(('S', "aS"), ('S', "a"));
 
         let gr = GR::new(vt, vn, productions, q0);
         let m = gr_to_afndl(&gr);
 
-        let delta_expected = delta!(
-            ("S", 'a', "S"),
-            ("S", 'a', "F")
-        );
+        let delta_expected = delta!(("S", 'a', "S"), ("S", 'a', "F"));
 
         assert_eq!(m.k, stateset!("S", "F"));
         assert_eq!(m.q0, "S".to_string());

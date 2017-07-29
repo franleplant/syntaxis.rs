@@ -30,7 +30,11 @@ struct CFG {
 
 
 impl CFG {
-    pub fn new<T: Into<String> + fmt::Debug>(vn: NonTerminalSet, vt: TerminalSet, p: Productions<T>, s: NonTerminal) -> CFG {
+    pub fn new<T: Into<String> + fmt::Debug>(vn: NonTerminalSet,
+                                             vt: TerminalSet,
+                                             p: Productions<T>,
+                                             s: NonTerminal)
+                                             -> CFG {
         let mut p_map: ProductionsMap = BTreeMap::new();
 
         if !vn.is_disjoint(&vt) {
@@ -39,12 +43,15 @@ impl CFG {
 
         for (nt, der_str) in p {
             if !vn.contains(&nt) {
-                panic!("NonTerminal in production rule does not belong to VN {:?} -> {:?} \n {:?}", nt, der_str, vn);
+                panic!("NonTerminal in production rule does not belong to VN {:?} -> {:?} \n {:?}",
+                       nt,
+                       der_str,
+                       vn);
             }
 
-            let dervec = p_map.entry(nt).or_insert(vec!());
+            let dervec = p_map.entry(nt).or_insert(vec![]);
 
-            let mut der: Derivation = vec!();
+            let mut der: Derivation = vec![];
 
             let der_string = der_str.into();
 
@@ -54,16 +61,19 @@ impl CFG {
 
             for c in der_string.chars() {
                 if vn.contains(&c) {
-                    der.push( TNT::NT(c.clone()) );
-                    continue
+                    der.push(TNT::NT(c.clone()));
+                    continue;
                 }
 
                 if vt.contains(&c) {
-                    der.push( TNT::T(c.clone()) );
-                    continue
+                    der.push(TNT::T(c.clone()));
+                    continue;
                 }
 
-                panic!("Char in derivation {:?} -> {:?} does not belong to VN or VT {:?}", nt, der_string, c);
+                panic!("Char in derivation {:?} -> {:?} does not belong to VN or VT {:?}",
+                       nt,
+                       der_string,
+                       c);
             }
 
             dervec.push(der);
@@ -78,8 +88,8 @@ impl CFG {
     }
 
     //pub fn get_nt_derivations(&self, nt: &NonTerminal) -> DerivationVec {
-        ////TODO: optimize the case where the nt is not found
-        //self.p.get(nt).unwrap().clone()
+    ////TODO: optimize the case where the nt is not found
+    //self.p.get(nt).unwrap().clone()
     //}
 }
 
@@ -108,7 +118,7 @@ impl fmt::Display for CFG {
 #[derive(Debug, Clone)]
 struct TNode {
     val: TNT,
-    children: Vec<TNode>
+    children: Vec<TNode>,
 }
 
 impl TNode {
@@ -118,7 +128,6 @@ impl TNode {
             children: children,
         }
     }
-
 }
 
 
@@ -150,7 +159,7 @@ impl TNT {
             TNT::T(t) => t,
             TNT::NT(nt) => nt,
             // TODO: proper lambda symbol
-            TNT::Lambda =>  '&',
+            TNT::Lambda => '&',
         }
     }
 
@@ -158,7 +167,7 @@ impl TNT {
         match *self {
             TNT::T(t) => format!("T('{}')", t),
             TNT::NT(nt) => format!("NT('{}')", nt),
-            TNT::Lambda =>  "Lambda".to_string(),
+            TNT::Lambda => "Lambda".to_string(),
         }
     }
 }
@@ -170,7 +179,7 @@ fn derivation_to_string(der: &Derivation) -> String {
         match *e {
             TNT::T(t) => der_string.push(t),
             TNT::NT(nt) => der_string.push(nt),
-            _ => {},
+            _ => {}
         }
     }
 
@@ -179,9 +188,9 @@ fn derivation_to_string(der: &Derivation) -> String {
 
 //Creates a single level derivation tree for the given Derivation
 fn tree(nt: &NonTerminal, der: &Derivation) -> TNode {
-    let mut children: Vec<TNode> = vec!();
+    let mut children: Vec<TNode> = vec![];
     for e in der {
-        let node = TNode::new(e.clone(), vec!());
+        let node = TNode::new(e.clone(), vec![]);
         children.push(node);
     }
     // TODO: check if the nt is effectively a nonterminal or not
@@ -200,10 +209,7 @@ mod tests {
         let vn: NonTerminalSet = charset!('S');
         let vt: TerminalSet = charset!('a', '(', ')');
         let s: NonTerminal = 'S';
-        let p: Productions<&'static str> = vec!(
-            ('S', "(S)" ),
-            ('S', "a" )
-        );
+        let p: Productions<&'static str> = vec![('S', "(S)"), ('S', "a")];
 
         let g = CFG::new(vn, vt, p, s);
         println!("Resulted grammar {}", g);
@@ -213,7 +219,7 @@ mod tests {
     fn tree_test() {
         use super::{TNT, tree};
 
-        let der = vec!( TNT::T('('), TNT::NT('S'), TNT::T(')') );
+        let der = vec![TNT::T('('), TNT::NT('S'), TNT::T(')')];
         let t = tree(&'S', &der);
         println!("Resulted tree {}", t);
     }

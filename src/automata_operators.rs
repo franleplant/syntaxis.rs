@@ -1,5 +1,5 @@
 use automata::{M, State, StateSet, TRAP_STATE};
-use std::collections::{BTreeSet};
+use std::collections::BTreeSet;
 
 
 pub fn stateset_name(states: &StateSet) -> String {
@@ -8,7 +8,7 @@ pub fn stateset_name(states: &StateSet) -> String {
 }
 
 
-pub fn lambda_closure(q: &StateSet, m: &M) -> StateSet{
+pub fn lambda_closure(q: &StateSet, m: &M) -> StateSet {
     let mut closure: StateSet = q.clone();
     let mut marked: StateSet = BTreeSet::new();
 
@@ -16,7 +16,7 @@ pub fn lambda_closure(q: &StateSet, m: &M) -> StateSet{
         let l = closure.clone();
         for t in l.iter() {
             if marked.contains(t) {
-                continue
+                continue;
             }
             marked.insert(t.clone());
 
@@ -67,11 +67,13 @@ pub fn afndl_to_afd(m: &M) -> M {
             marked.insert(t.clone());
             for a in m.alphabet.iter() {
                 let u = mover(&t, *a, &m);
-                if u.is_empty() { continue; }
+                if u.is_empty() {
+                    continue;
+                }
 
 
                 k.insert(u.clone());
-                delta.insert( (stateset_name(&t), *a, stateset_name(&u)) );
+                delta.insert((stateset_name(&t), *a, stateset_name(&u)));
             }
         }
     }
@@ -95,16 +97,13 @@ mod tests {
 
     #[test]
     fn lambda_closure_test() {
-        use super::{lambda_closure};
-        use automata::{M};
+        use super::lambda_closure;
+        use automata::M;
         let k = stateset!("q0", "q1", "q2");
         let alphabet = alphabet!('b');
         let q0 = "q0".to_string();
         let f = stateset!("q1");
-        let delta = delta!(
-            ("q0", 'λ', "q2"),
-            ("q0", 'b', "q1")
-        );
+        let delta = delta!(("q0", 'λ', "q2"), ("q0", 'b', "q1"));
 
         let automata = M::new(k, alphabet, q0, f, delta);
 
@@ -114,61 +113,54 @@ mod tests {
 
     #[test]
     fn mover_test() {
-        use automata::{M};
-        use super::{mover};
+        use automata::M;
+        use super::mover;
         let k = stateset!("q0", "q1", "q2");
         let alphabet = alphabet!('a', 'b');
         let q0 = "q0".to_string();
         let f = stateset!("q1");
-        let delta = delta!(
-            ("q0", 'a', "q1"),
-            ("q0", 'b', "q0"),
-            ("q1", 'λ', "q2"),
-            ("q1", 'b', "q1")
-        );
+        let delta = delta!(("q0", 'a', "q1"),
+                           ("q0", 'b', "q0"),
+                           ("q1", 'λ', "q2"),
+                           ("q1", 'b', "q1"));
 
         let automata = M::new(k, alphabet, q0, f, delta);
 
-        assert_eq!(mover(&stateset!("q0"), 'a', &automata), stateset!("q1", "q2"));
+        assert_eq!(mover(&stateset!("q0"), 'a', &automata),
+                   stateset!("q1", "q2"));
     }
 
 
     #[test]
     fn afndl_to_afd_test() {
-        use super::{afndl_to_afd};
-        use automata::{M};
+        use super::afndl_to_afd;
+        use automata::M;
         let k = stateset!("q0", "q1", "q2", "q3", "q4", "q5");
         let alphabet = alphabet!('a', 'b');
         let q0 = "q0".to_string();
         let f = stateset!("q5");
-        let delta = delta!(
-            ("q0", 'a', "q1"),
-            ("q0", 'a', "q2"),
-            ("q1", 'b', "q3"),
-            ("q2", 'a', "q4"),
-            ("q3", 'λ', "q2"),
-            ("q4", 'λ', "q3"),
-            ("q4", 'b', "q5")
-        );
+        let delta = delta!(("q0", 'a', "q1"),
+                           ("q0", 'a', "q2"),
+                           ("q1", 'b', "q3"),
+                           ("q2", 'a', "q4"),
+                           ("q3", 'λ', "q2"),
+                           ("q4", 'λ', "q3"),
+                           ("q4", 'b', "q5"));
 
         let afndl = M::new(k, alphabet, q0, f, delta);
 
         let afd: M = afndl_to_afd(&afndl);
-        let m_expected =M::new(
-            stateset!("q0", "q1-q2", "q2-q3-q4", "q2-q3", "q5"),
-            afndl.alphabet.clone(),
-            "q0".to_string(),
-            stateset!("q5"),
-            delta!(
-                ("q0",       'a', "q1-q2"  ),
-                ("q1-q2",    'a', "q2-q3-q4"),
-                ("q1-q2",    'b', "q2-q3"  ),
-                ("q2-q3-q4", 'a', "q2-q3-q4"),
-                ("q2-q3-q4", 'b', "q5"    ),
-                ("q2-q3",    'a', "q2-q3-q4"),
-                ("q0",       'a', "q1-q2"  )
-            )
-        );
+        let m_expected = M::new(stateset!("q0", "q1-q2", "q2-q3-q4", "q2-q3", "q5"),
+                                afndl.alphabet.clone(),
+                                "q0".to_string(),
+                                stateset!("q5"),
+                                delta!(("q0", 'a', "q1-q2"),
+                                       ("q1-q2", 'a', "q2-q3-q4"),
+                                       ("q1-q2", 'b', "q2-q3"),
+                                       ("q2-q3-q4", 'a', "q2-q3-q4"),
+                                       ("q2-q3-q4", 'b', "q5"),
+                                       ("q2-q3", 'a', "q2-q3-q4"),
+                                       ("q0", 'a', "q1-q2")));
 
         assert_eq!(afd, m_expected);
     }
@@ -182,33 +174,24 @@ mod tests {
         use automata::M;
         use automata_min::pretify_automata;
 
-        let afndl = M::new(
-            stateset!("01q0", "01q1", "0f0", "0q0"),
-            alphabet!('a'),
-            "0q0".to_string(),
-            stateset!("0f0"),
-            delta!(
-                ("01q0", 'a', "01q1"),
-                ("01q1", 'λ', "01q0"),
-                ("01q1", 'λ', "0f0"),
-                ("0q0",  'λ', "01q0"),
-                ("0q0",  'λ', "0f0")
-            )
-        );
+        let afndl = M::new(stateset!("01q0", "01q1", "0f0", "0q0"),
+                           alphabet!('a'),
+                           "0q0".to_string(),
+                           stateset!("0f0"),
+                           delta!(("01q0", 'a', "01q1"),
+                                  ("01q1", 'λ', "01q0"),
+                                  ("01q1", 'λ', "0f0"),
+                                  ("0q0", 'λ', "01q0"),
+                                  ("0q0", 'λ', "0f0")));
 
 
-        let afd: M = pretify_automata( &afndl_to_afd(&afndl) );
+        let afd: M = pretify_automata(&afndl_to_afd(&afndl));
 
-        let m_expected = M::new(
-            stateset!("Q0", "Q1"),
-            afndl.alphabet.clone(),
-            "Q0".to_string(),
-            stateset!("Q0", "Q1"),
-            delta!(
-                ("Q0", 'a', "Q1"  ),
-                ("Q1", 'a', "Q1"  )
-            )
-        );
+        let m_expected = M::new(stateset!("Q0", "Q1"),
+                                afndl.alphabet.clone(),
+                                "Q0".to_string(),
+                                stateset!("Q0", "Q1"),
+                                delta!(("Q0", 'a', "Q1"), ("Q1", 'a', "Q1")));
 
         {
             use automata::print_automata;
@@ -220,5 +203,3 @@ mod tests {
     }
 
 }
-
-

@@ -79,7 +79,7 @@ impl Parser {
                 }
                 self.next();
                 return self.ops();
-            },
+            }
 
             // Re -> ( Re ) Ops
             // First
@@ -92,7 +92,12 @@ impl Parser {
                         let mut focus = focus.borrow_mut();
                         focus.children.push(Node::new_t(token.clone()));
                         focus.children.push(new_focus.clone());
-                        focus.children.push(Node::new_t(Token { category: ")".to_string(), lexeme: "".to_string()}));
+                        focus
+                            .children
+                            .push(Node::new_t(Token {
+                                                  category: ")".to_string(),
+                                                  lexeme: "".to_string(),
+                                              }));
                         focus.children.push(ops_focus.clone());
                     }
 
@@ -114,7 +119,7 @@ impl Parser {
                 }
 
                 return false;
-            },
+            }
 
             "EOF" => return true,
 
@@ -146,7 +151,7 @@ impl Parser {
                 }
                 self.next();
                 return self.re();
-            },
+            }
             // Ops -> * ReFinish
             // First
             "*" => {
@@ -165,7 +170,7 @@ impl Parser {
                 }
                 self.next();
                 return self.re_finish();
-            },
+            }
             // Ops -> + ReFinish
             // First
             "+" => {
@@ -184,7 +189,7 @@ impl Parser {
                 }
                 self.next();
                 return self.re_finish();
-            },
+            }
 
             // Ops -> Re
             // First
@@ -201,27 +206,37 @@ impl Parser {
                     *self.focus.borrow_mut() = new_focus;
                 }
                 return self.re();
-            },
+            }
 
             // Follow
             ")" => {
                 {
                     let focus = self.focus.borrow();
                     let mut focus = focus.borrow_mut();
-                    focus.children.push(Node::new_t(Token { category: "Lambda".to_string(), lexeme: "".to_string()}));
+                    focus
+                        .children
+                        .push(Node::new_t(Token {
+                                              category: "Lambda".to_string(),
+                                              lexeme: "".to_string(),
+                                          }));
                 }
                 return true;
-            },
+            }
 
             // Follow
             "EOF" => {
                 {
                     let focus = self.focus.borrow();
                     let mut focus = focus.borrow_mut();
-                    focus.children.push(Node::new_t(Token { category: "EOF".to_string(), lexeme: "".to_string()}));
+                    focus
+                        .children
+                        .push(Node::new_t(Token {
+                                              category: "EOF".to_string(),
+                                              lexeme: "".to_string(),
+                                          }));
                 }
                 return true;
-            },
+            }
 
             _ => return false,
         }
@@ -248,30 +263,39 @@ impl Parser {
                     *self.focus.borrow_mut() = new_focus;
                 }
                 return self.re();
-            },
+            }
             // Follow
             ")" => {
                 {
                     let focus = self.focus.borrow();
                     let mut focus = focus.borrow_mut();
-                    focus.children.push(Node::new_t(Token { category: "Lambda".to_string(), lexeme: "".to_string()}));
+                    focus
+                        .children
+                        .push(Node::new_t(Token {
+                                              category: "Lambda".to_string(),
+                                              lexeme: "".to_string(),
+                                          }));
                 }
                 return true;
-            },
+            }
             // Follow
             "EOF" => {
                 {
                     let focus = self.focus.borrow();
                     let mut focus = focus.borrow_mut();
-                    focus.children.push(Node::new_t(Token { category: "EOF".to_string(), lexeme: "".to_string()}));
+                    focus
+                        .children
+                        .push(Node::new_t(Token {
+                                              category: "EOF".to_string(),
+                                              lexeme: "".to_string(),
+                                          }));
                 }
                 return true;
-            },
+            }
 
             _ => return false,
         }
     }
-
 }
 
 
@@ -284,7 +308,12 @@ mod tests {
         let cases = vec![
             ("a", vec![("Lit", "a"), ("EOF", "")]),
             ("aa", vec![("Lit", "a"), ("Lit", "a"), ("EOF", "")]),
-            ("a|b|c", vec![("Lit", "a"), ("|", ""), ("Lit", "b"), ("|", ""), ("Lit", "c"), ("EOF", "")]),
+            ("a|b|c", vec![("Lit", "a"),
+                            ("|", ""),
+                            ("Lit", "b"),
+                            ("|", ""),
+                            ("Lit", "c"),
+                            ("EOF", "")]),
             ("(a)", vec![("(", ""), ("Lit", "a"), (")", ""), ("EOF", "")]),
             ("a(b)", vec![("Lit", "a"), ("(", ""), ("Lit", "b"), (")", ""), ("EOF", "")]),
             //"(a|b)",
@@ -293,7 +322,12 @@ mod tests {
 
         for (c, e) in cases {
             let expected: Vec<Token> = e.iter()
-                .map(|&(cat, lexeme)| Token { category: cat.to_string(), lexeme: lexeme.to_string()})
+                .map(|&(cat, lexeme)| {
+                         Token {
+                             category: cat.to_string(),
+                             lexeme: lexeme.to_string(),
+                         }
+                     })
                 .collect();
             assert_eq!(lex(c.to_string()), expected);
         }
@@ -303,27 +337,16 @@ mod tests {
     #[test]
     fn parse_test() {
 
-        let cases = vec![
-            "a",
-            "(a)",
-            "(aa)",
-            "a*b",
-            "(a*)b",
-            "(a)*b",
-            "a|(cde)*a+",
-            "((((aaa))))",
-        ];
+        let cases = vec!["a",
+                         "(a)",
+                         "(aa)",
+                         "a*b",
+                         "(a*)b",
+                         "(a)*b",
+                         "a|(cde)*a+",
+                         "((((aaa))))"];
 
-        let expect = vec![
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-        ];
+        let expect = vec![true, true, true, true, true, true, true, true];
 
         for (c, e) in cases.iter().zip(expect.iter()) {
             println!("\nCase {:?}\n", c);

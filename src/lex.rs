@@ -19,10 +19,16 @@ pub fn lex(s: String) -> Vec<Token> {
             _ => ("Lit", c.to_string()),
         };
 
-        tokens.push( Token{ category: cat.to_string(), lexeme: lexeme.to_string() } );
+        tokens.push(Token {
+                        category: cat.to_string(),
+                        lexeme: lexeme.to_string(),
+                    });
     }
 
-    tokens.push( Token{ category: "EOF".to_string(), lexeme: "".to_string() } );
+    tokens.push(Token {
+                    category: "EOF".to_string(),
+                    lexeme: "".to_string(),
+                });
 
     tokens
 }
