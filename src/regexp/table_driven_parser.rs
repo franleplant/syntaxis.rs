@@ -1,7 +1,8 @@
 use std::collections::{HashSet, HashMap};
 use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
-use regexp::{Token, lex};
+use regexp::{Token, Node, lex};
 
 
 
@@ -106,6 +107,8 @@ struct Parser {
     pub tokens: Vec<Token>,
     pub productions: Vec<Production>,
     pub table: HashMap<(String, String), usize>,
+    pub tree: Rc<RefCell<Node>>,
+    pub focus: RefCell<Rc<RefCell<Node>>>,
     stack: Vec<String>,
 }
 
@@ -113,7 +116,7 @@ struct Parser {
 impl Parser {
     pub fn new(src: String) -> Parser {
         let tokens = lex(src.clone());
-        //let root = Node::new_nt("Re");
+        let root = Node::new_nt("Re");
         Parser {
             index: 0,
             src: src,
@@ -121,6 +124,8 @@ impl Parser {
             productions: get_productions(),
             table: get_table(),
             stack: vec!["EOF".to_string(), "Re".to_string()],
+            tree: root.clone(),
+            focus: RefCell::new(root.clone()),
         }
     }
 
@@ -146,10 +151,7 @@ impl Parser {
                     self.stack.pop().unwrap();
                     self.index += 1;
                 } else {
-                    panic!("ERROR: no entry found in table. parse focus {:?}, token {:?}, stack {:?}",
-                           parse_focus,
-                           token,
-                           self.stack)
+                    panic!("ERROR: wrong symbol at the top of the stack")
                 }
             } else {
                 let prod_number = self.table
@@ -159,6 +161,8 @@ impl Parser {
                 let prod = self.productions
                     .get(*prod_number)
                     .expect("ERROR: expanding parse_focus");
+
+                println!("REDUCE {:?}", prod);
 
                 self.stack.pop().unwrap();
                 for s in prod.to.iter().rev() {
