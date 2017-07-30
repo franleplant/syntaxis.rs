@@ -14,6 +14,20 @@ pub enum NodeCat {
     NT(String),
 }
 
+impl NodeCat {
+    pub fn as_string(&self) -> String {
+        match self {
+            &NodeCat::NT(ref cat) => {
+                cat.clone()
+            }
+
+            &NodeCat::T(ref token) => {
+                token.category.clone()
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Node {
     pub category: NodeCat,
@@ -21,9 +35,9 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new_nt(val: &'static str) -> Rc<RefCell<Node>> {
+    pub fn new_nt<T: Into<String>>(val: T) -> Rc<RefCell<Node>> {
         Rc::new(RefCell::new(Node {
-                                 category: NodeCat::NT(val.to_string()),
+                                 category: NodeCat::NT(val.into()),
                                  children: vec![],
                              }))
     }
@@ -33,6 +47,18 @@ impl Node {
                                  category: NodeCat::T(val),
                                  children: vec![],
                              }))
+    }
+
+    pub fn as_string(&self) -> String {
+        match self.category {
+            NodeCat::NT(ref cat) => {
+                format!("Node( {}, {} )", cat, self.children.len())
+            }
+
+            NodeCat::T(ref token) => {
+                format!("Node( {}, {}, {} )", token.category, token.lexeme, self.children.len())
+            }
+        }
     }
 
     pub fn print(&self) {

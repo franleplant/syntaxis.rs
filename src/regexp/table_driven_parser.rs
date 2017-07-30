@@ -1,13 +1,16 @@
 use std::collections::{HashSet, HashMap};
-use std::cell::{Cell, RefCell};
+use std::cell::{RefCell};
 use std::rc::Rc;
 
-use regexp::{Token, Node, lex};
+use regexp::{Token, Node, NodeCat, lex, tree_to_automata};
 
 
 
 pub fn re2(search: String, into: &'static str) -> Result<(), ()> {
-    Ok(())
+    let mut p = Parser::new(search);
+    p.parse();
+    let mut m = tree_to_automata(p.tree.clone()).unwrap();
+    m.check_string(into)
 }
 
 #[derive(Debug)]
@@ -18,11 +21,11 @@ struct Production {
 
 impl Production {
     pub fn new<T: Into<String>>(from: T, to: Vec<T>) -> Production {
-
         let mut to_arr = vec![];
         for x in to {
             to_arr.push(x.into())
         }
+
         Production {
             from: from.into(),
             to: to_arr,
@@ -70,25 +73,6 @@ fn get_table() -> HashMap<(String, String), usize> {
         table.insert((non_terminal.to_string(), token_cat.to_string()), value);
     }
 
-
-    //table.insert(("Re", "Lit"), 0);
-    //table.insert(("Re", "("), 1);
-
-    //table.insert(("Ops", "*"), 2);
-    //table.insert(("Ops", "+"), 3);
-    //table.insert(("Ops", "|"), 4);
-    //table.insert(("Ops", "Lit"), 5);
-    //table.insert(("Ops", "("), 5);
-    //table.insert(("Ops", "eof"), 6);
-    //table.insert(("Ops", ")"), 6);
-    //table.insert(("Ops", "Lambda"), 6);
-
-    //table.insert(("ReL", "Lit"), 7);
-    //table.insert(("ReL", "("), 7);
-    //table.insert(("ReL", "eof"), 8);
-    //table.insert(("ReL", ")"), 8);
-    //table.insert(("ReL", "Lambda"), 8);
-
     table
 }
 
@@ -108,8 +92,7 @@ struct Parser {
     pub productions: Vec<Production>,
     pub table: HashMap<(String, String), usize>,
     pub tree: Rc<RefCell<Node>>,
-    pub focus: RefCell<Rc<RefCell<Node>>>,
-    stack: Vec<String>,
+    stack: Vec<Rc<RefCell<Node>>>,
 }
 
 
@@ -117,57 +100,91 @@ impl Parser {
     pub fn new(src: String) -> Parser {
         let tokens = lex(src.clone());
         let root = Node::new_nt("Re");
+
+        let stack = vec![
+            Node::new_t(Token { category: "EOF".to_string(), lexeme: "".to_string() }),
+            root.clone(),
+        ];
+
         Parser {
             index: 0,
             src: src,
             tokens: tokens,
             productions: get_productions(),
             table: get_table(),
-            stack: vec!["EOF".to_string(), "Re".to_string()],
+            stack: stack,
             tree: root.clone(),
-            focus: RefCell::new(root.clone()),
         }
     }
 
-    fn parse_focus(&self) -> Option<String> {
+    fn parse_focus(&self) -> Option<Rc<RefCell<Node>>> {
         assert!(self.stack.len() != 0, "OVERFLOW {:?}", self);
-        self.stack.get(self.stack.len() - 1).map(|s| s.clone())
+        self.stack
+            .get(self.stack.len() - 1)
+            .map(|s| s.clone())
     }
 
     pub fn parse(&mut self) -> bool {
         loop {
             let ref token = self.tokens[self.index];
-            let parse_focus = self.parse_focus().expect("Something went wrong");
+            let parse_focus = self.parse_focus()
+                .expect("Something went wrong");
 
-            println!("pfocus {:?} {:?} stack {:?}",
-                     parse_focus,
+            let cat = {
+                let parse_focus = parse_focus.borrow();
+                parse_focus.category.as_string()
+            };
+
+
+            println!("pfocus {} {:?} stack {:?}",
+                     parse_focus.borrow().as_string(),
                      token,
-                     self.stack);
+                     self.stack.iter().map(|s| s.borrow().as_string()).collect::<Vec<String>>());
 
-            if parse_focus == "EOF" && token.category == "EOF" {
+            if cat == "EOF".to_string() && token.category == "EOF" {
                 return true;
-            } else if is_terminal(&parse_focus) {
-                if *parse_focus == token.category {
-                    self.stack.pop().unwrap();
+            } else if is_terminal(&cat) {
+                if cat == token.category {
+                    let node = self.stack.pop().unwrap();
+                    let mut node = node.borrow_mut();
+                    node.category = NodeCat::T(token.clone());
                     self.index += 1;
                 } else {
-                    panic!("ERROR: wrong symbol at the top of the stack")
+                    println!("ERROR: wrong symbol at the top of the stack");
+                    return false;
                 }
             } else {
                 let prod_number = self.table
-                    .get(&(parse_focus, token.category.clone()))
-                    .expect("ERROR: expanding parse_focus");
+                    .get(&(cat, token.category.clone()))
+                    .expect("ERROR: expanding parse_focus 1");
 
                 let prod = self.productions
                     .get(*prod_number)
-                    .expect("ERROR: expanding parse_focus");
+                    .expect("ERROR: expanding parse_focus 2");
 
                 println!("REDUCE {:?}", prod);
 
-                self.stack.pop().unwrap();
-                for s in prod.to.iter().rev() {
-                    if s != "Lambda" {
-                        self.stack.push(s.clone());
+                let root = self.stack.pop().unwrap();
+                let mut root = root.borrow_mut();
+                for s in &prod.to {
+                    match s {
+                        _ if is_terminal(s) => {
+                            let token = Token { category: s.clone(), lexeme: "".to_string() };
+                            let node = Node::new_t(token);
+                            root.children.push(node.clone());
+                        }
+
+                        _ => {
+                            let node = Node::new_nt(s.clone().as_str());
+                            root.children.push(node.clone());
+                        }
+                    }
+                }
+
+                for c in root.children.iter().rev() {
+                    let cat = c.borrow().category.as_string();
+                    if cat != "Lambda".to_string() {
+                        self.stack.push(c.clone());
                     }
                 }
             }
@@ -190,15 +207,18 @@ mod tests {
                          "(a*)b",
                          "(a)*b",
                          "a|(cde)*a+",
-                         "((((aaa))))"];
+                         "((((aaa))))",
+                         "(a"];
 
-        let expect = vec![true, true, true, true, true, true, true, true];
+        let expect = vec![true, true, true, true, true, true, true, true, false];
 
         for (c, e) in cases.iter().zip(expect.iter()) {
             println!("\nCase {:?}\n", c);
             let mut p = Parser::new(c.to_string());
             assert_eq!(p.parse(), *e, "In {:?}", c);
-            //p.print();
+            println!("TREE\n");
+            Node::preorder_walk(p.tree.clone(), 0);
         }
     }
+
 }
