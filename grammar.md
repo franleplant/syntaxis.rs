@@ -34,16 +34,16 @@ Lit   |                    |
 
 ### First+ for each prod
 
-P                          |  First +
-----------------------------------------------------
-Re -> Lit Ops              | Lit
-Re -> ( Re ) Ops           | (
-                           |
-Ops -> * ReL               | *
-Ops -> + ReL               | +
-Ops -> | Re                | |
-Ops -> Re                  | Lit, (
-Ops -> Lambda              | eof, ), Lambda
-                           |
-ReL -> Re                  | Lit, (
-ReL -> Lambda              | eof, ), Lambda
+N  |  P                          |  First +
+---|------------------------------------------------------
+0  |  Re -> Lit Ops              | Lit
+1  |  Re -> ( Re ) Ops           | (
+   |                             |
+2  |  Ops -> * ReL               | *
+3  |  Ops -> + ReL               | +
+4  |  Ops -> | Re                | |
+5  |  Ops -> Re                  | Lit, (
+6  |  Ops -> Lambda              | eof, ), Lambda
+   |                             |
+7  |  ReL -> Re                  | Lit, (
+8  |  ReL -> Lambda              | eof, ), Lambda

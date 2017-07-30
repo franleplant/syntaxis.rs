@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet};
+use std::collections::BTreeSet;
 use automata::{M, StateSet, State, Delta, to_delta};
 use automata_operators::stateset_name;
 
@@ -36,7 +36,7 @@ fn warshall(matrix: &RelationMatrix) -> RelationMatrix {
     for k in 0..n {
         for i in 0..n {
             for j in 0..n {
-                r[i][j] = r[i][j] || ( r[i][k] && r[k][j] )
+                r[i][j] = r[i][j] || (r[i][k] && r[k][j])
             }
         }
     }
@@ -108,18 +108,25 @@ fn get_quotient(m: &M) -> Quotient {
 
             while x != &x_marked {
                 for state in x {
-                    if x_marked.contains(state) { continue }
+                    if x_marked.contains(state) {
+                        continue;
+                    }
                     let mut x1: EquivalenceClass = stateset!(state);
 
                     x_marked.insert(state.clone());
 
                     for other_state in x {
-                        if x_marked.contains(other_state) { continue }
+                        if x_marked.contains(other_state) {
+                            continue;
+                        }
                         let mut flag = true;
                         for a in &m.alphabet {
-                            let state_eq_class = get_equivalence_class(&m.get_next_states(&state, &a), &quotient);
-                            let other_state_eq_class = get_equivalence_class(&m.get_next_states(&other_state, &a), &quotient);
-                            if  state_eq_class == other_state_eq_class  {
+                            let state_eq_class =
+                                get_equivalence_class(&m.get_next_states(&state, &a), &quotient);
+                            let other_state_eq_class =
+                                get_equivalence_class(&m.get_next_states(&other_state, &a),
+                                                      &quotient);
+                            if state_eq_class == other_state_eq_class {
                                 flag = flag && true
                             } else {
                                 flag = flag && false
@@ -148,7 +155,10 @@ fn get_quotient(m: &M) -> Quotient {
 }
 
 fn apply_quotient(m: &M, quotient: &Quotient) -> M {
-    let states: StateSet = quotient.iter().map(|eq_class| stateset_name(eq_class)).collect();
+    let states: StateSet = quotient
+        .iter()
+        .map(|eq_class| stateset_name(eq_class))
+        .collect();
 
     let q0 = stateset_name(&get_equivalence_class(&stateset!(m.q0), quotient));
     let mut f = stateset!();
@@ -164,18 +174,12 @@ fn apply_quotient(m: &M, quotient: &Quotient) -> M {
             for next_state in next_states {
                 let s = stateset_name(&get_equivalence_class(&stateset!(state), quotient));
                 let ns = stateset_name(&get_equivalence_class(&stateset!(next_state), quotient));
-                delta.insert( (s, a.clone(), ns) );
+                delta.insert((s, a.clone(), ns));
             }
         }
     }
 
-    M::new(
-        states,
-        m.alphabet.clone(),
-        q0,
-        f,
-        delta
-    )
+    M::new(states, m.alphabet.clone(), q0, f, delta)
 }
 
 
@@ -250,7 +254,9 @@ pub fn pretify_automata(m: &M) -> M {
 
 
     for s in &m.k {
-        if *s == m.q0 { continue }
+        if *s == m.q0 {
+            continue;
+        }
         let mut new_name: String = prefix.clone();
         new_name.push_str(&index.to_string());
         k.insert(new_name.clone());
@@ -259,12 +265,18 @@ pub fn pretify_automata(m: &M) -> M {
     }
 
     let q0: State = rename_map.get(&m.q0).unwrap().clone();
-    let f: StateSet = m.f.iter().map(|ref s| rename_map.get(*s).unwrap().clone()).collect();
-
-    let delta: Delta =
-        to_delta(&m)
+    let f: StateSet = m.f
         .iter()
-        .map(|&(ref s, a, ref ns)| (rename_map.get(s).unwrap().clone(), a.clone(), rename_map.get(ns).unwrap().clone()) )
+        .map(|ref s| rename_map.get(*s).unwrap().clone())
+        .collect();
+
+    let delta: Delta = to_delta(&m)
+        .iter()
+        .map(|&(ref s, a, ref ns)| {
+                 (rename_map.get(s).unwrap().clone(),
+                  a.clone(),
+                  rename_map.get(ns).unwrap().clone())
+             })
         .collect();
 
 
@@ -285,26 +297,22 @@ mod tests {
         let alphabet = alphabet!('a', 'b');
         let q0 = "q0".to_string();
         let f = stateset!("q1");
-        let delta = delta!(
-            ("q0", 'a', "q0"),
-            ("q0", 'b', "q1"),
-            ("q1", 'a', "q1"),
-            ("q1", 'b', "q2"),
-            ("q2", 'a', "q0"),
-            ("q2", 'b', "q2"),
-            ("q3", 'a', "q3")
-        );
+        let delta = delta!(("q0", 'a', "q0"),
+                           ("q0", 'b', "q1"),
+                           ("q1", 'a', "q1"),
+                           ("q1", 'b', "q2"),
+                           ("q2", 'a', "q0"),
+                           ("q2", 'b', "q2"),
+                           ("q3", 'a', "q3"));
 
 
         let m = M::new(k, alphabet, q0, f, delta);
 
         let rm = get_relation_matrix(&m);
-        let rm_expected = vec![
-            vec![true, true, false, false],
-            vec![false, true, true, false],
-            vec![true, false, true, false],
-            vec![false, false, false, true]
-        ];
+        let rm_expected = vec![vec![true, true, false, false],
+                               vec![false, true, true, false],
+                               vec![true, false, true, false],
+                               vec![false, false, false, true]];
 
         assert_eq!(rm, rm_expected);
     }
@@ -314,20 +322,16 @@ mod tests {
     fn warshall_test() {
         use super::warshall;
 
-        let rm = vec![
-            vec![true, true, false, false],
-            vec![false, true, true, false],
-            vec![true, false, true, false],
-            vec![false, false, false, true]
-        ];
+        let rm = vec![vec![true, true, false, false],
+                      vec![false, true, true, false],
+                      vec![true, false, true, false],
+                      vec![false, false, false, true]];
 
         let r = warshall(&rm);
-        let r_expected = vec![
-            vec![true, true, true, false],
-            vec![true, true, true, false],
-            vec![true, true, true, false],
-            vec![false, false, false, true]
-        ];
+        let r_expected = vec![vec![true, true, true, false],
+                              vec![true, true, true, false],
+                              vec![true, true, true, false],
+                              vec![false, false, false, true]];
 
         assert_eq!(r, r_expected);
     }
@@ -341,24 +345,20 @@ mod tests {
         let alphabet = alphabet!('a', 'b');
         let q0 = "q0".to_string();
         let f = stateset!("q1");
-        let delta = delta!(
-            ("q0", 'a', "q0"),
-            ("q0", 'b', "q1"),
-            ("q1", 'a', "q1"),
-            ("q1", 'b', "q2"),
-            ("q2", 'a', "q0"),
-            ("q2", 'b', "q2"),
-            ("q3", 'a', "q3")
-        );
+        let delta = delta!(("q0", 'a', "q0"),
+                           ("q0", 'b', "q1"),
+                           ("q1", 'a', "q1"),
+                           ("q1", 'b', "q2"),
+                           ("q2", 'a', "q0"),
+                           ("q2", 'b', "q2"),
+                           ("q3", 'a', "q3"));
 
 
         let m = M::new(k, alphabet, q0, f, delta);
-        let r = vec![
-            vec![true, true, true, false],
-            vec![true, true, true, false],
-            vec![true, true, true, false],
-            vec![false, false, false, true]
-        ];
+        let r = vec![vec![true, true, true, false],
+                     vec![true, true, true, false],
+                     vec![true, true, true, false],
+                     vec![false, false, false, true]];
 
         let states = get_reachable_states(&m, &r);
         let states_expected = stateset!("q0", "q1", "q2");
@@ -375,15 +375,13 @@ mod tests {
         let alphabet = alphabet!('a', 'b');
         let q0 = "q0".to_string();
         let f = stateset!("q1");
-        let delta = delta!(
-            ("q0", 'a', "q0"),
-            ("q0", 'b', "q1"),
-            ("q1", 'a', "q1"),
-            ("q1", 'b', "q2"),
-            ("q2", 'a', "q0"),
-            ("q2", 'b', "q2"),
-            ("q3", 'a', "q3")
-        );
+        let delta = delta!(("q0", 'a', "q0"),
+                           ("q0", 'b', "q1"),
+                           ("q1", 'a', "q1"),
+                           ("q1", 'b', "q2"),
+                           ("q2", 'a', "q0"),
+                           ("q2", 'b', "q2"),
+                           ("q3", 'a', "q3"));
 
 
         let m = M::new(k, alphabet, q0, f, delta);
@@ -392,14 +390,12 @@ mod tests {
         let m_new = remove_unreachable_states_with_params(&m, reachable_states.clone());
 
 
-        let delta_expected = delta!(
-            ("q0", 'a', "q0"),
-            ("q0", 'b', "q1"),
-            ("q1", 'a', "q1"),
-            ("q1", 'b', "q2"),
-            ("q2", 'a', "q0"),
-            ("q2", 'b', "q2")
-        );
+        let delta_expected = delta!(("q0", 'a', "q0"),
+                                    ("q0", 'b', "q1"),
+                                    ("q1", 'a', "q1"),
+                                    ("q1", 'b', "q2"),
+                                    ("q2", 'a', "q0"),
+                                    ("q2", 'b', "q2"));
 
         let delta_expected = to_delta_inner(delta_expected);
 
@@ -410,20 +406,18 @@ mod tests {
 
     #[test]
     fn get_quotient_test() {
-        use std::collections::{BTreeSet};
+        use std::collections::BTreeSet;
         use super::{Quotient, get_quotient};
-        use automata::{M};
+        use automata::M;
 
         let k = stateset!("q0", "q1", "q2", "q3");
         let alphabet = alphabet!('a', 'b');
         let q0 = "q0".to_string();
         let f = stateset!("q3");
-        let delta = delta!(
-            ("q0", 'a', "q1"),
-            ("q0", 'b', "q2"),
-            ("q1", 'a', "q3"),
-            ("q2", 'a', "q3")
-        );
+        let delta = delta!(("q0", 'a', "q1"),
+                           ("q0", 'b', "q2"),
+                           ("q1", 'a', "q3"),
+                           ("q2", 'a', "q3"));
 
         let m = M::new(k, alphabet, q0, f, delta);
 
@@ -443,20 +437,18 @@ mod tests {
 
     #[test]
     fn apply_quotient_test() {
-        use std::collections::{BTreeSet};
+        use std::collections::BTreeSet;
         use super::{Quotient, apply_quotient};
-        use automata::{M};
+        use automata::M;
 
         let k = stateset!("q0", "q1", "q2", "q3");
         let alphabet = alphabet!('a', 'b');
         let q0 = "q0".to_string();
         let f = stateset!("q3");
-        let delta = delta!(
-            ("q0", 'a', "q1"),
-            ("q0", 'b', "q2"),
-            ("q1", 'a', "q3"),
-            ("q2", 'a', "q3")
-        );
+        let delta = delta!(("q0", 'a', "q1"),
+                           ("q0", 'b', "q2"),
+                           ("q1", 'a', "q3"),
+                           ("q2", 'a', "q3"));
 
         let m = M::new(k, alphabet, q0, f, delta);
 
@@ -470,17 +462,13 @@ mod tests {
 
         let min_m = apply_quotient(&m, &quotient);
 
-        let m_expected = M::new(
-            stateset!("q0", "q1-q2", "q3"),
-            m.alphabet.clone(),
-            "q0".to_string(),
-            stateset!("q3"),
-            delta!(
-                ("q0", 'a', "q1-q2"),
-                ("q0", 'b', "q1-q2"),
-                ("q1-q2", 'a', "q3")
-            )
-        );
+        let m_expected = M::new(stateset!("q0", "q1-q2", "q3"),
+                                m.alphabet.clone(),
+                                "q0".to_string(),
+                                stateset!("q3"),
+                                delta!(("q0", 'a', "q1-q2"),
+                                       ("q0", 'b', "q1-q2"),
+                                       ("q1-q2", 'a', "q3")));
 
         assert_eq!(min_m, m_expected);
     }
@@ -492,17 +480,15 @@ mod tests {
     /// reachable state set by default.
     #[test]
     fn remove_unreachable_states_test_case_1() {
-        use super::{remove_unreachable_states};
+        use super::remove_unreachable_states;
         use automata::M;
-        //fd M { k: {"FS", "S"}, alphabet: {'a'}, q0: "S", f: {"FS"}, delta: {"FS": {'a': {"FS"}}, "S": {'a': {"FS"}}}, state: "S" }
+        //fd M { k: {"FS", "S"}, alphabet: {'a'}, q0: "S",
+        //f: {"FS"}, delta: {"FS": {'a': {"FS"}}, "S": {'a': {"FS"}}}, state: "S" }
         let k = stateset!("FS", "S");
         let alphabet = alphabet!('a');
         let q0 = "S".to_string();
         let f = stateset!("FS");
-        let delta = delta!(
-            ("S", 'a', "FS"),
-            ("FS", 'a', "FS")
-        );
+        let delta = delta!(("S", 'a', "FS"), ("FS", 'a', "FS"));
 
         let m = M::new(k, alphabet, q0, f, delta);
         let min_m = remove_unreachable_states(&m);
@@ -515,20 +501,18 @@ mod tests {
     #[test]
     fn remove_unreachable_states_test_case_2() {
         use automata::M;
-        use super::{remove_unreachable_states};
+        use super::remove_unreachable_states;
 
         let k = stateset!("01q0", "01q1", "02q0", "02q1", "0f0", "0q0");
         let alphabet = alphabet!('a', 'b');
         let q0 = "0q0".to_string();
         let f = stateset!("0f0");
-        let delta = delta!(
-            ("01q0", 'a', "01q1"),
-            ("01q1", 'λ', "0f0"),
-            ("02q0", 'b', "02q1"),
-            ("02q1", 'λ', "0f0"),
-            ("0q0", 'λ', "01q0"),
-            ("0q0", 'λ', "02q0")
-        );
+        let delta = delta!(("01q0", 'a', "01q1"),
+                           ("01q1", 'λ', "0f0"),
+                           ("02q0", 'b', "02q1"),
+                           ("02q1", 'λ', "0f0"),
+                           ("0q0", 'λ', "01q0"),
+                           ("0q0", 'λ', "02q0"));
 
         let m = M::new(k, alphabet, q0, f, delta);
         let min_m = remove_unreachable_states(&m);
@@ -538,17 +522,15 @@ mod tests {
 
     #[test]
     fn minify_simple_test_case() {
-        use super::{minify};
+        use super::minify;
         use automata::M;
-        //fd M { k: {"FS", "S"}, alphabet: {'a'}, q0: "S", f: {"FS"}, delta: {"FS": {'a': {"FS"}}, "S": {'a': {"FS"}}}, state: "S" }
+        //fd M { k: {"FS", "S"}, alphabet: {'a'}, q0: "S", f: {"FS"},
+        //delta: {"FS": {'a': {"FS"}}, "S": {'a': {"FS"}}}, state: "S" }
         let k = stateset!("FS", "S");
         let alphabet = alphabet!('a');
         let q0 = "S".to_string();
         let f = stateset!("FS");
-        let delta = delta!(
-            ("S", 'a', "FS"),
-            ("FS", 'a', "FS")
-        );
+        let delta = delta!(("S", 'a', "FS"), ("FS", 'a', "FS"));
 
         let m = M::new(k, alphabet, q0, f, delta);
         let min_m = minify(&m);
@@ -561,25 +543,17 @@ mod tests {
         use super::pretify_automata;
         use automata::M;
 
-        let ugly_m = M::new(
-            stateset!("01q00", "00q01"),
-            alphabet!('a'),
-            "01q00".to_string(),
-            stateset!("00q01"),
-            delta!(
-                ("01q00", 'a', "00q01")
-            )
-        );
+        let ugly_m = M::new(stateset!("01q00", "00q01"),
+                            alphabet!('a'),
+                            "01q00".to_string(),
+                            stateset!("00q01"),
+                            delta!(("01q00", 'a', "00q01")));
 
-        let m_expected = M::new(
-            stateset!("Q0", "Q1"),
-            alphabet!('a'),
-            "Q0".to_string(),
-            stateset!("Q1"),
-            delta!(
-                ("Q0", 'a', "Q1")
-            )
-        );
+        let m_expected = M::new(stateset!("Q0", "Q1"),
+                                alphabet!('a'),
+                                "Q0".to_string(),
+                                stateset!("Q1"),
+                                delta!(("Q0", 'a', "Q1")));
 
         let m = pretify_automata(&ugly_m);
 
