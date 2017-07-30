@@ -1,5 +1,5 @@
 use std::collections::{HashSet, HashMap};
-use std::cell::{RefCell};
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use regexp::{Token, Node, NodeCat, lex, tree_to_automata};
@@ -101,10 +101,11 @@ impl Parser {
         let tokens = lex(src.clone());
         let root = Node::new_nt("Re");
 
-        let stack = vec![
-            Node::new_t(Token { category: "EOF".to_string(), lexeme: "".to_string() }),
-            root.clone(),
-        ];
+        let stack = vec![Node::new_t(Token {
+                                         category: "EOF".to_string(),
+                                         lexeme: "".to_string(),
+                                     }),
+                         root.clone()];
 
         Parser {
             index: 0,
@@ -119,16 +120,13 @@ impl Parser {
 
     fn parse_focus(&self) -> Option<Rc<RefCell<Node>>> {
         assert!(self.stack.len() != 0, "OVERFLOW {:?}", self);
-        self.stack
-            .get(self.stack.len() - 1)
-            .map(|s| s.clone())
+        self.stack.get(self.stack.len() - 1).map(|s| s.clone())
     }
 
     pub fn parse(&mut self) -> bool {
         loop {
             let ref token = self.tokens[self.index];
-            let parse_focus = self.parse_focus()
-                .expect("Something went wrong");
+            let parse_focus = self.parse_focus().expect("Something went wrong");
 
             let cat = {
                 let parse_focus = parse_focus.borrow();
@@ -139,7 +137,10 @@ impl Parser {
             println!("pfocus {} {:?} stack {:?}",
                      parse_focus.borrow().as_string(),
                      token,
-                     self.stack.iter().map(|s| s.borrow().as_string()).collect::<Vec<String>>());
+                     self.stack
+                         .iter()
+                         .map(|s| s.borrow().as_string())
+                         .collect::<Vec<String>>());
 
             if cat == "EOF".to_string() && token.category == "EOF" {
                 return true;
@@ -169,7 +170,10 @@ impl Parser {
                 for s in &prod.to {
                     match s {
                         _ if is_terminal(s) => {
-                            let token = Token { category: s.clone(), lexeme: "".to_string() };
+                            let token = Token {
+                                category: s.clone(),
+                                lexeme: "".to_string(),
+                            };
                             let node = Node::new_t(token);
                             root.children.push(node.clone());
                         }

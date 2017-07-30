@@ -17,13 +17,9 @@ pub enum NodeCat {
 impl NodeCat {
     pub fn as_string(&self) -> String {
         match self {
-            &NodeCat::NT(ref cat) => {
-                cat.clone()
-            }
+            &NodeCat::NT(ref cat) => cat.clone(),
 
-            &NodeCat::T(ref token) => {
-                token.category.clone()
-            }
+            &NodeCat::T(ref token) => token.category.clone(),
         }
     }
 }
@@ -51,12 +47,13 @@ impl Node {
 
     pub fn as_string(&self) -> String {
         match self.category {
-            NodeCat::NT(ref cat) => {
-                format!("Node( {}, {} )", cat, self.children.len())
-            }
+            NodeCat::NT(ref cat) => format!("Node( {}, {} )", cat, self.children.len()),
 
             NodeCat::T(ref token) => {
-                format!("Node( {}, {}, {} )", token.category, token.lexeme, self.children.len())
+                format!("Node( {}, {}, {} )",
+                        token.category,
+                        token.lexeme,
+                        self.children.len())
             }
         }
     }
